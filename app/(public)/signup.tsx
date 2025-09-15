@@ -1,4 +1,4 @@
-import { useSignIn } from '@clerk/clerk-expo'
+import { useSignUp } from '@clerk/clerk-expo'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
@@ -19,24 +19,25 @@ import { Pressable } from '@/components/ui/pressable'
 import { Text } from '@/components/ui/text'
 import { VStack } from '@/components/ui/vstack'
 import {
-  type LoginFormData,
-  loginSchema,
+  type SignUpFormData,
+  signUpSchema,
   type VerifyCodeFormData,
   verifyCodeSchema,
 } from '@/lib/validations/auth'
 
-export default function Login() {
-  const { signIn, setActive, isLoaded } = useSignIn()
+export default function SignUp() {
+  const { signUp, setActive, isLoaded } = useSignUp()
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [showCodeVerification, setShowCodeVerification] = useState(false)
   const [userEmail, setUserEmail] = useState('')
 
-  const loginForm = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
+  const signUpForm = useForm<SignUpFormData>({
+    resolver: zodResolver(signUpSchema),
     defaultValues: {
       email: '',
       password: '',
+      confirmPassword: '',
     },
   })
 
@@ -47,17 +48,17 @@ export default function Login() {
     },
   })
 
-  const onSignIn = async (data: LoginFormData) => {
+  const onSignUp = async (data: SignUpFormData) => {
     if (!isLoaded) return
 
     try {
       setIsLoading(true)
-      const result = await signIn.create({
-        identifier: data.email,
+      const result = await signUp.create({
+        emailAddress: data.email,
         password: data.password,
       })
 
-      if (result.status === 'needs_second_factor') {
+      if (result.status === 'missing_requirements') {
         setUserEmail(data.email)
         setShowCodeVerification(true)
         Alert.alert(
@@ -68,7 +69,7 @@ export default function Login() {
         await setActive({ session: result.createdSessionId })
         router.replace('/(auth)/home' as any)
       } else {
-        console.error('Sign in not complete')
+        console.error('Sign up not complete')
       }
     } catch (err: any) {
       console.error('Error:', err.errors[0].longMessage)
@@ -79,12 +80,11 @@ export default function Login() {
   }
 
   const onVerifyCode = async (data: VerifyCodeFormData) => {
-    if (!isLoaded || !signIn) return
+    if (!isLoaded || !signUp) return
 
     try {
       setIsLoading(true)
-      const result = await signIn.attemptSecondFactor({
-        strategy: 'phone_code',
+      const result = await signUp.attemptEmailAddressVerification({
         code: data.code,
       })
 
@@ -103,11 +103,11 @@ export default function Login() {
   }
 
   const onResendCode = async () => {
-    if (!isLoaded || !signIn) return
+    if (!isLoaded || !signUp) return
 
     try {
       setIsLoading(true)
-      await signIn.prepareSecondFactor({ strategy: 'phone_code' })
+      await signUp.prepareEmailAddressVerification({ strategy: 'email_code' })
       Alert.alert('Sucesso', 'Código reenviado para seu email!')
     } catch (err: any) {
       console.error('Error:', err.errors[0].longMessage)
@@ -117,12 +117,12 @@ export default function Login() {
     }
   }
 
-  const onSignInWithGoogle = async () => {
+  const onSignUpWithGoogle = async () => {
     if (!isLoaded) return
 
     try {
       setIsLoading(true)
-      const result = await signIn.create({
+      const result = await signUp.create({
         strategy: 'oauth_google',
         redirectUrl: '/sso-callback',
       })
@@ -130,8 +130,8 @@ export default function Login() {
       if (result.status === 'complete') {
         await setActive({ session: result.createdSessionId })
         router.replace('/(auth)/home' as any)
-      } else if (result.status === 'needs_second_factor') {
-        setUserEmail(result.identifier || '')
+      } else if (result.status === 'missing_requirements') {
+        setUserEmail(result.emailAddress || '')
         setShowCodeVerification(true)
         Alert.alert(
           'Código enviado!',
@@ -157,12 +157,12 @@ export default function Login() {
             {/* Header */}
             <VStack space='sm' className='items-center mb-8'>
               <Heading size='2xl' className='text-center'>
-                {showCodeVerification ? 'Verificar código' : 'Bem-vindo'}
+                {showCodeVerification ? 'Verificar código' : 'Criar conta'}
               </Heading>
               <Text className='text-center text-gray-600'>
                 {showCodeVerification
                   ? `Enviamos um código de 6 dígitos para ${userEmail}`
-                  : 'Entre na sua conta para continuar'}
+                  : 'Preencha os dados para criar sua conta'}
               </Text>
             </VStack>
 
@@ -220,7 +220,7 @@ export default function Login() {
                 <VStack space='sm'>
                   <Text className='text-sm font-medium text-gray-700'>Email</Text>
                   <Controller
-                    control={loginForm.control}
+                    control={signUpForm.control}
                     name='email'
                     render={({ field: { onChange, onBlur, value } }) => (
                       <TextInput
@@ -235,9 +235,9 @@ export default function Login() {
                       />
                     )}
                   />
-                  {loginForm.formState.errors.email && (
+                  {signUpForm.formState.errors.email && (
                     <Text className='text-red-500 text-sm'>
-                      {loginForm.formState.errors.email.message}
+                      {signUpForm.formState.errors.email.message}
                     </Text>
                   )}
                 </VStack>
@@ -245,7 +245,7 @@ export default function Login() {
                 <VStack space='sm'>
                   <Text className='text-sm font-medium text-gray-700'>Senha</Text>
                   <Controller
-                    control={loginForm.control}
+                    control={signUpForm.control}
                     name='password'
                     render={({ field: { onChange, onBlur, value } }) => (
                       <TextInput
@@ -254,29 +254,57 @@ export default function Login() {
                         onChangeText={onChange}
                         onBlur={onBlur}
                         secureTextEntry
-                        autoComplete='password'
+                        autoComplete='new-password'
                         className='border border-gray-300 rounded-lg px-3 py-2 bg-white'
                       />
                     )}
                   />
-                  {loginForm.formState.errors.password && (
+                  {signUpForm.formState.errors.password && (
                     <Text className='text-red-500 text-sm'>
-                      {loginForm.formState.errors.password.message}
+                      {signUpForm.formState.errors.password.message}
+                    </Text>
+                  )}
+                </VStack>
+
+                <VStack space='sm'>
+                  <Text className='text-sm font-medium text-gray-700'>
+                    Confirmar senha
+                  </Text>
+                  <Controller
+                    control={signUpForm.control}
+                    name='confirmPassword'
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <TextInput
+                        placeholder='Confirme sua senha'
+                        value={value}
+                        onChangeText={onChange}
+                        onBlur={onBlur}
+                        secureTextEntry
+                        autoComplete='new-password'
+                        className='border border-gray-300 rounded-lg px-3 py-2 bg-white'
+                      />
+                    )}
+                  />
+                  {signUpForm.formState.errors.confirmPassword && (
+                    <Text className='text-red-500 text-sm'>
+                      {signUpForm.formState.errors.confirmPassword.message}
                     </Text>
                   )}
                 </VStack>
 
                 <Button
-                  onPress={loginForm.handleSubmit(onSignIn)}
+                  onPress={signUpForm.handleSubmit(onSignUp)}
                   className='mt-4'
                   isDisabled={isLoading}
                 >
-                  <ButtonText>{isLoading ? 'Entrando...' : 'Entrar'}</ButtonText>
+                  <ButtonText>
+                    {isLoading ? 'Criando conta...' : 'Criar conta'}
+                  </ButtonText>
                 </Button>
               </VStack>
             )}
 
-            {/* Divider e Google Sign In - só aparece no formulário de login */}
+            {/* Divider e Google Sign Up - só aparece no formulário de cadastro */}
             {!showCodeVerification && (
               <>
                 <HStack space='md' className='items-center my-4'>
@@ -287,7 +315,7 @@ export default function Login() {
 
                 <Button
                   variant='outline'
-                  onPress={onSignInWithGoogle}
+                  onPress={onSignUpWithGoogle}
                   isDisabled={isLoading}
                 >
                   <ButtonText>Continuar com Google</ButtonText>
@@ -295,15 +323,15 @@ export default function Login() {
               </>
             )}
 
-            {/* Sign Up Link */}
+            {/* Sign In Link */}
             <HStack space='sm' className='justify-center mt-8'>
-              <Text className='text-gray-600'>Não tem uma conta?</Text>
+              <Text className='text-gray-600'>Já tem uma conta?</Text>
               <Pressable
                 onPress={() => {
-                  router.replace('/(public)/signup' as any)
+                  router.replace('/(public)/login' as any)
                 }}
               >
-                <Text className='text-blue-600 font-medium'>Cadastre-se</Text>
+                <Text className='text-blue-600 font-medium'>Entre aqui</Text>
               </Pressable>
             </HStack>
           </VStack>
