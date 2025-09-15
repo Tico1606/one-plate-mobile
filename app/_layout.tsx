@@ -1,19 +1,16 @@
 import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider'
 import '@/global.css'
-import { ClerkProvider, useAuth } from '@clerk/clerk-expo'
-import { tokenCache } from '@clerk/clerk-expo/token-cache'
+import { useAuth } from '@clerk/clerk-expo'
 import FontAwesome from '@expo/vector-icons/FontAwesome'
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native'
 import { useFonts } from 'expo-font'
-import { Slot, usePathname, useRouter, useSegments } from 'expo-router'
+import { Slot, useRouter, useSegments } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import { useEffect, useState } from 'react'
-import { Fab, FabIcon } from '@/components/ui/fab'
-import { MoonIcon, SunIcon } from '@/components/ui/icon'
+import { Box } from '@/components/ui/box'
+import { Text } from '@/components/ui/text'
+import { ClerkProvider, clerkConfig } from '@/lib/clerk'
 
 export { ErrorBoundary } from 'expo-router'
-
-const publishKey = process.env.CLERK_PUBLISHABLE_KEY
 
 SplashScreen.preventAutoHideAsync()
 
@@ -23,10 +20,31 @@ const InitialLayout = () => {
   const router = useRouter()
 
   useEffect(() => {
-    if (isLoaded) return
-    
-    console.log('isSignedIn:', isSignedIn)
-  }, [isSignedIn])
+    if (!isLoaded) return
+
+    const inAuthGroup = segments[0] === '(auth)'
+    const inPublicGroup = segments[0] === '(public)'
+    const isSSOCallback = segments[0] === 'sso-callback'
+
+    if (isSSOCallback) {
+      // Não redireciona durante o callback OAuth
+      return
+    }
+
+    if (isSignedIn && !inAuthGroup) {
+      router.replace('/(auth)/home' as any)
+    } else if (!isSignedIn && !inPublicGroup) {
+      router.replace('/(public)/login' as any)
+    }
+  }, [isLoaded, isSignedIn, segments, router])
+
+  if (!isLoaded) {
+    return (
+      <Box className='flex-1 bg-white justify-center items-center'>
+        <Text className='text-lg'>Carregando...</Text>
+      </Box>
+    )
+  }
 
   return <Slot />
 }
@@ -36,8 +54,8 @@ export default function RootLayout() {
     SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
     ...FontAwesome.font,
   })
-  
-  const [colorMode, setColorMode] = useState<'light' | 'dark'>('light')
+
+  const [colorMode] = useState<'light' | 'dark'>('light')
 
   useEffect(() => {
     if (error) throw error
@@ -49,9 +67,11 @@ export default function RootLayout() {
 
   return (
     <GluestackUIProvider mode={colorMode}>
-      <ClerkProvider publishableKey={publishKey} tokenCache={tokenCache}>
+      <ClerkProvider
+        publishableKey={clerkConfig.publishableKey}
+        tokenCache={clerkConfig.tokenCache}
+      >
         <InitialLayout />
-        
       </ClerkProvider>
     </GluestackUIProvider>
   )
