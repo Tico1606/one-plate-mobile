@@ -67,7 +67,7 @@ export default function RootLayout() {
   return (
     <GluestackUIProvider mode={colorMode}>
       <ClerkProvider
-        publishableKey={clerkConfig.publishableKey}
+        publishableKey={clerkConfig?.publishableKey}
         tokenCache={clerkConfig.tokenCache}
       >
         <InitialLayout />
