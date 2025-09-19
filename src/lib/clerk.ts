@@ -1,7 +1,7 @@
 import { ClerkProvider } from '@clerk/clerk-expo'
 import { tokenCache } from '@clerk/clerk-expo/token-cache'
 
-const publishableKey = process.env.CLERK_PUBLISHABLE_KEY
+const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY
 
 // if (!publishableKey || publishableKey === 'pk_test_example_key') {
 //   console.warn(
