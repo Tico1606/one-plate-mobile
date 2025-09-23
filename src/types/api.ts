@@ -1,22 +1,34 @@
 // Tipos para receitas
-export interface Recipe {
-  id: number
+export interface BaseRecipe {
+  id: string
   title: string
-  description?: string
-  author: string
-  authorId: number
-  rating: number
-  time: string
-  difficulty: 'easy' | 'medium' | 'hard'
+  description?: string | null
+  authorId: string
+  difficulty: 'EASY' | 'MEDIUM' | 'HARD'
+  prepMinutes: number
+  cookMinutes: number
   servings: number
-  likes: number
+  videoUrl?: string | null
+  source?: string | null
+  calories?: number | null
+  proteinGrams?: number | null
+  carbGrams?: number | null
+  fatGrams?: number | null
+  status: 'DRAFT' | 'PUBLISHED'
+  publishedAt?: Date | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface Recipe extends BaseRecipe {
+  author: any // Objeto do autor
   image: string
+  likes: number
   ingredients: Ingredient[]
   instructions: string[]
   tags: string[]
   categoryId: number
-  createdAt: string
-  updatedAt: string
+  time: string // Tempo total calculado
 }
 
 export interface Ingredient {

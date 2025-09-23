@@ -49,9 +49,9 @@ export const recipesService = {
   },
 
   // Buscar receitas favoritas
-  getFavorites: async (): Promise<Recipe[]> => {
-    return get<Recipe[]>(API_CONFIG.ENDPOINTS.RECIPES.FAVORITES)
-  },
+  // getFavorites: async (): Promise<Recipe[]> => {
+  //   return get<Recipe[]>(API_CONFIG.ENDPOINTS.RECIPES.FAVORITES)
+  // },
 
   // Adicionar/remover favorito
   toggleFavorite: async (recipeId: number): Promise<ApiResponse<boolean>> => {
@@ -69,12 +69,32 @@ export const recipesService = {
   },
 
   // Buscar receitas populares
-  getPopular: async (limit: number = 10): Promise<Recipe[]> => {
-    return get<Recipe[]>(`${API_CONFIG.ENDPOINTS.RECIPES.LIST}/popular?limit=${limit}`)
-  },
+  // getPopular: async (limit: number = 10): Promise<Recipe[]> => {
+  //   return get<Recipe[]>(`${API_CONFIG.ENDPOINTS.RECIPES.LIST}/popular?limit=${limit}`)
+  // },
 
   // Buscar receitas recentes
   getRecent: async (limit: number = 10): Promise<Recipe[]> => {
-    return get<Recipe[]>(`${API_CONFIG.ENDPOINTS.RECIPES.LIST}/recent?limit=${limit}`)
+    // Usar o endpoint de listagem com ordenação por data de criação
+    const url = `${API_CONFIG.ENDPOINTS.RECIPES.LIST}?limit=${limit}&sortBy=createdAt&sortOrder=desc`
+    console.log('🔍 DEBUG recipesService.getRecent:', {
+      url,
+      fullUrl: `${API_CONFIG.BASE_URL}${url}`,
+    })
+    try {
+      const result = await get<any>(url)
+      console.log('✅ DEBUG recipesService.getRecent success:', result)
+      console.log('🔍 DEBUG recipesService.getRecent - result.data:', result.data)
+      console.log('🔍 DEBUG recipesService.getRecent - result.recipes:', result.recipes)
+      // O backend retorna { data: { recipes: [...] } } diretamente
+      // Mas result já é o objeto data, então acessamos result.recipes
+      const recipes = result.recipes || []
+      console.log('🔍 DEBUG recipesService.getRecent - recipes finais:', recipes)
+      return recipes
+    } catch (error) {
+      console.error('❌ DEBUG recipesService.getRecent error:', error)
+      // Se falhar, retornar array vazio em vez de lançar erro
+      return []
+    }
   },
 }

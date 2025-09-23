@@ -56,31 +56,31 @@ export function useRecipe(id: number) {
   return { data, loading, error, refetch: fetchRecipe }
 }
 
-// Hook para receitas populares
-export function usePopularRecipes(limit: number = 10) {
-  const [data, setData] = useState<Recipe[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+// Hook para receitas populares (comentado - método não disponível)
+// export function usePopularRecipes(limit: number = 10) {
+//   const [data, setData] = useState<Recipe[]>([])
+//   const [loading, setLoading] = useState(true)
+//   const [error, setError] = useState<string | null>(null)
 
-  const fetchPopular = useCallback(async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      const result = await recipesService.getPopular(limit)
-      setData(result)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao buscar receitas populares')
-    } finally {
-      setLoading(false)
-    }
-  }, [limit])
+//   const fetchPopular = useCallback(async () => {
+//     try {
+//       setLoading(true)
+//       setError(null)
+//       const result = await recipesService.getPopular(limit)
+//       setData(result)
+//     } catch (err) {
+//       setError(err instanceof Error ? err.message : 'Erro ao buscar receitas populares')
+//     } finally {
+//       setLoading(false)
+//     }
+//   }, [limit])
 
-  useEffect(() => {
-    fetchPopular()
-  }, [fetchPopular])
+//   useEffect(() => {
+//     fetchPopular()
+//   }, [fetchPopular])
 
-  return { data, loading, error, refetch: fetchPopular }
-}
+//   return { data, loading, error, refetch: fetchPopular }
+// }
 
 // Hook para receitas recentes
 export function useRecentRecipes(limit: number = 10) {
@@ -92,9 +92,16 @@ export function useRecentRecipes(limit: number = 10) {
     try {
       setLoading(true)
       setError(null)
+      // console.log(
+      //   '🔍 DEBUG useRecentRecipes.fetchRecent - iniciando busca com limit:',
+      //   limit,
+      // )
       const result = await recipesService.getRecent(limit)
+      // console.log('🔍 DEBUG useRecentRecipes.fetchRecent - resultado recebido:', result)
       setData(result)
+      // console.log('🔍 DEBUG useRecentRecipes.fetchRecent - data atualizada:', result)
     } catch (err) {
+      console.error('❌ DEBUG useRecentRecipes.fetchRecent - erro:', err)
       setError(err instanceof Error ? err.message : 'Erro ao buscar receitas recentes')
     } finally {
       setLoading(false)
@@ -108,41 +115,180 @@ export function useRecentRecipes(limit: number = 10) {
   return { data, loading, error, refetch: fetchRecent }
 }
 
-// Hook para favoritos
-export function useFavorites() {
+// Hook para favoritos (comentado - método não disponível)
+// export function useFavorites() {
+//   const [data, setData] = useState<Recipe[]>([])
+//   const [loading, setLoading] = useState(true)
+//   const [error, setError] = useState<string | null>(null)
+
+//   const fetchFavorites = useCallback(async () => {
+//     try {
+//       setLoading(true)
+//       setError(null)
+//       const result = await recipesService.getFavorites()
+//       setData(result)
+//     } catch (err) {
+//       setError(err instanceof Error ? err.message : 'Erro ao buscar favoritos')
+//     } finally {
+//       setLoading(false)
+//     }
+//   }, [])
+
+//   const toggleFavorite = useCallback(
+//     async (recipeId: number) => {
+//       try {
+//         await recipesService.toggleFavorite(recipeId)
+//         // Atualizar a lista de favoritos
+//         await fetchFavorites()
+//       } catch (err) {
+//         setError(err instanceof Error ? err.message : 'Erro ao alterar favorito')
+//       }
+//     },
+//     [fetchFavorites],
+//   )
+
+//   useEffect(() => {
+//     fetchFavorites()
+//   }, [fetchFavorites])
+
+//   return { data, loading, error, refetch: fetchFavorites, toggleFavorite }
+// }
+
+// Hook para busca de receitas com debounce
+export function useRecipeSearch(query: string, delay: number = 500) {
   const [data, setData] = useState<Recipe[]>([])
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchFavorites = useCallback(async () => {
+  const searchRecipes = useCallback(async (searchQuery: string) => {
+    if (!searchQuery.trim()) {
+      setData([])
+      return
+    }
+
     try {
       setLoading(true)
       setError(null)
-      const result = await recipesService.getFavorites()
-      setData(result)
+      const result = await recipesService.getAll({ search: searchQuery, limit: 20 })
+      setData(result.data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao buscar favoritos')
+      setError(err instanceof Error ? err.message : 'Erro ao buscar receitas')
     } finally {
       setLoading(false)
     }
   }, [])
 
-  const toggleFavorite = useCallback(
-    async (recipeId: number) => {
-      try {
-        await recipesService.toggleFavorite(recipeId)
-        // Atualizar a lista de favoritos
-        await fetchFavorites()
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Erro ao alterar favorito')
-      }
-    },
-    [fetchFavorites],
-  )
+  // Debounce da busca
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      searchRecipes(query)
+    }, delay)
+
+    return () => clearTimeout(timeoutId)
+  }, [query, delay, searchRecipes])
+
+  return { data, loading, error, refetch: () => searchRecipes(query) }
+}
+
+// Hook para paginação infinita de receitas
+export function useInfiniteRecipes(filters?: Omit<RecipeFilters, 'page'>) {
+  const [data, setData] = useState<Recipe[]>([])
+  const [loading, setLoading] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [hasNextPage, setHasNextPage] = useState(true)
+  const [currentPage, setCurrentPage] = useState(1)
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasNextPage) return
+
+    try {
+      setLoadingMore(true)
+      setError(null)
+
+      const result = await recipesService.getAll({
+        ...filters,
+        page: currentPage + 1,
+        limit: 10,
+      })
+
+      setData((prev) => [...prev, ...result.data])
+      setCurrentPage((prev) => prev + 1)
+      setHasNextPage(result.pagination.page < result.pagination.totalPages)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao carregar mais receitas')
+    } finally {
+      setLoadingMore(false)
+    }
+  }, [filters, currentPage, hasNextPage, loadingMore])
+
+  const refetch = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      setCurrentPage(1)
+      setHasNextPage(true)
+
+      const result = await recipesService.getAll({
+        ...filters,
+        page: 1,
+        limit: 10,
+      })
+
+      setData(result.data)
+      setCurrentPage(1)
+      setHasNextPage(result.pagination.page < result.pagination.totalPages)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao buscar receitas')
+    } finally {
+      setLoading(false)
+    }
+  }, [filters])
 
   useEffect(() => {
-    fetchFavorites()
-  }, [fetchFavorites])
+    refetch()
+  }, [refetch])
 
-  return { data, loading, error, refetch: fetchFavorites, toggleFavorite }
+  return {
+    data,
+    loading,
+    loadingMore,
+    error,
+    hasNextPage,
+    refetch,
+    loadMore,
+  }
+}
+
+// Hook para receitas por categoria com cache
+export function useRecipesByCategory(
+  categoryId: number,
+  filters?: Omit<RecipeFilters, 'categoryId'>,
+) {
+  const [data, setData] = useState<PaginatedResponse<Recipe> | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const fetchRecipes = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const result = await recipesService.getByCategory(categoryId, filters)
+      setData(result)
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : 'Erro ao buscar receitas da categoria',
+      )
+    } finally {
+      setLoading(false)
+    }
+  }, [categoryId, filters])
+
+  useEffect(() => {
+    if (categoryId) {
+      fetchRecipes()
+    }
+  }, [categoryId, fetchRecipes])
+
+  return { data, loading, error, refetch: fetchRecipes }
 }
