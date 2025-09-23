@@ -28,34 +28,26 @@ interface User {
   emailAddresses: Array<{ emailAddress: string }>
 }
 
-interface ProfilePageProps {
+interface ProfileViewProps {
+  // Dados
   user: User | null | undefined
-  onSettingsPress?: () => void
-  onMenuItemPress?: (item: MenuItem) => void
-  onSignOut: () => void
+  profileStats: ProfileStat[]
+  menuItems: MenuItem[]
+
+  // Handlers
+  handleSignOut: () => void
+  handleSettingsPress: () => void
+  handleMenuItemPress: (item: MenuItem) => void
 }
 
-export function ProfilePage({
+export function ProfileView({
   user,
-  onSettingsPress,
-  onMenuItemPress,
-  onSignOut,
-}: ProfilePageProps) {
-  const profileStats: ProfileStat[] = [
-    { label: 'Receitas', value: '24', icon: 'restaurant' },
-    { label: 'Favoritos', value: '156', icon: 'heart' },
-    { label: 'Seguidores', value: '1.2k', icon: 'people' },
-    { label: 'Seguindo', value: '89', icon: 'person-add' },
-  ]
-
-  const menuItems: MenuItem[] = [
-    { id: 1, title: 'Minhas Receitas', icon: 'book', color: '#3B82F6' },
-    { id: 2, title: 'Favoritos', icon: 'heart', color: '#EF4444' },
-    { id: 3, title: 'Configurações', icon: 'settings', color: '#6B7280' },
-    { id: 4, title: 'Ajuda', icon: 'help-circle', color: '#10B981' },
-    { id: 5, title: 'Sobre', icon: 'information-circle', color: '#8B5CF6' },
-  ]
-
+  profileStats,
+  menuItems,
+  handleSignOut,
+  handleSettingsPress,
+  handleMenuItemPress,
+}: ProfileViewProps) {
   return (
     <Box className='flex-1 bg-gray-50'>
       <ScrollView showsVerticalScrollIndicator={false}>
@@ -63,7 +55,7 @@ export function ProfilePage({
         <Box className='bg-white px-6 py-8'>
           <HStack className='justify-between items-center mb-6'>
             <Text className='text-2xl font-bold text-gray-900'>Perfil</Text>
-            <TouchableOpacity onPress={onSettingsPress}>
+            <TouchableOpacity onPress={handleSettingsPress}>
               <Ionicons name='settings' size={24} color='#374151' />
             </TouchableOpacity>
           </HStack>
@@ -109,7 +101,7 @@ export function ProfilePage({
         {/* Menu Items */}
         <VStack className='px-6 py-4 space-y-2'>
           {menuItems.map((item) => (
-            <TouchableOpacity key={item.id} onPress={() => onMenuItemPress?.(item)}>
+            <TouchableOpacity key={item.id} onPress={() => handleMenuItemPress(item)}>
               <Card className='p-4'>
                 <HStack className='items-center space-x-4'>
                   <Box
@@ -128,7 +120,7 @@ export function ProfilePage({
 
         {/* Logout Button */}
         <Box className='px-6 py-4'>
-          <Button onPress={onSignOut} variant='outline' className='border-red-200'>
+          <Button onPress={handleSignOut} variant='outline' className='border-red-200'>
             <HStack className='items-center space-x-2'>
               <Ionicons name='log-out' size={20} color='#EF4444' />
               <ButtonText className='text-red-500 font-medium'>Sair da Conta</ButtonText>

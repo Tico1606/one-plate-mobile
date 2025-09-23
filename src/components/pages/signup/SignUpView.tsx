@@ -11,38 +11,42 @@ import { Pressable } from '@/components/ui/pressable'
 import { Text } from '@/components/ui/text'
 import { VStack } from '@/components/ui/vstack'
 import {
-  type LoginFormData,
-  loginSchema,
+  type SignUpFormData,
+  signUpSchema,
   type VerifyCodeFormData,
   verifyCodeSchema,
 } from '@/lib/validations/auth'
 
-interface LoginPageProps {
-  onSignIn: (data: LoginFormData) => Promise<void>
-  onVerifyCode: (data: VerifyCodeFormData) => Promise<void>
-  onResendCode: () => Promise<void>
-  onSignInWithGoogle: () => Promise<void>
-  onNavigateToSignUp: () => void
+interface SignUpViewProps {
+  // Dados
   isLoading: boolean
   showCodeVerification: boolean
   userEmail: string
+
+  // Handlers
+  onSignUp: (data: SignUpFormData) => Promise<void>
+  onVerifyCode: (data: VerifyCodeFormData) => Promise<void>
+  onResendCode: () => Promise<void>
+  onSignUpWithGoogle: () => Promise<void>
+  onNavigateToLogin: () => void
 }
 
-export function LoginPage({
-  onSignIn,
-  onVerifyCode,
-  onResendCode,
-  onSignInWithGoogle,
-  onNavigateToSignUp,
+export function SignUpView({
   isLoading,
   showCodeVerification,
   userEmail,
-}: LoginPageProps) {
-  const loginForm = useForm<LoginFormData>({
-    resolver: zodResolver(loginSchema),
+  onSignUp,
+  onVerifyCode,
+  onResendCode,
+  onSignUpWithGoogle,
+  onNavigateToLogin,
+}: SignUpViewProps) {
+  const signUpForm = useForm<SignUpFormData>({
+    resolver: zodResolver(signUpSchema),
     defaultValues: {
       email: '',
       password: '',
+      confirmPassword: '',
     },
   })
 
@@ -64,12 +68,12 @@ export function LoginPage({
             {/* Header */}
             <VStack space='sm' className='items-center mb-8'>
               <Heading size='2xl' className='text-center'>
-                {showCodeVerification ? 'Verificar código' : 'Bem-vindo'}
+                {showCodeVerification ? 'Verificar código' : 'Criar conta'}
               </Heading>
               <Text className='text-center text-gray-600'>
                 {showCodeVerification
                   ? `Enviamos um código de 6 dígitos para ${userEmail}`
-                  : 'Entre na sua conta para continuar'}
+                  : 'Preencha os dados para criar sua conta'}
               </Text>
             </VStack>
 
@@ -127,7 +131,7 @@ export function LoginPage({
                 <VStack space='sm'>
                   <Text className='text-sm font-medium text-gray-700'>Email</Text>
                   <Controller
-                    control={loginForm.control}
+                    control={signUpForm.control}
                     name='email'
                     render={({ field: { onChange, onBlur, value } }) => (
                       <TextInput
@@ -142,9 +146,9 @@ export function LoginPage({
                       />
                     )}
                   />
-                  {loginForm.formState.errors.email && (
+                  {signUpForm.formState.errors.email && (
                     <Text className='text-red-500 text-sm'>
-                      {loginForm.formState.errors.email.message}
+                      {signUpForm.formState.errors.email.message}
                     </Text>
                   )}
                 </VStack>
@@ -152,7 +156,7 @@ export function LoginPage({
                 <VStack space='sm'>
                   <Text className='text-sm font-medium text-gray-700'>Senha</Text>
                   <Controller
-                    control={loginForm.control}
+                    control={signUpForm.control}
                     name='password'
                     render={({ field: { onChange, onBlur, value } }) => (
                       <TextInput
@@ -161,29 +165,57 @@ export function LoginPage({
                         onChangeText={onChange}
                         onBlur={onBlur}
                         secureTextEntry
-                        autoComplete='password'
+                        autoComplete='new-password'
                         className='border border-gray-300 rounded-lg px-3 py-2 bg-white'
                       />
                     )}
                   />
-                  {loginForm.formState.errors.password && (
+                  {signUpForm.formState.errors.password && (
                     <Text className='text-red-500 text-sm'>
-                      {loginForm.formState.errors.password.message}
+                      {signUpForm.formState.errors.password.message}
+                    </Text>
+                  )}
+                </VStack>
+
+                <VStack space='sm'>
+                  <Text className='text-sm font-medium text-gray-700'>
+                    Confirmar senha
+                  </Text>
+                  <Controller
+                    control={signUpForm.control}
+                    name='confirmPassword'
+                    render={({ field: { onChange, onBlur, value } }) => (
+                      <TextInput
+                        placeholder='Confirme sua senha'
+                        value={value}
+                        onChangeText={onChange}
+                        onBlur={onBlur}
+                        secureTextEntry
+                        autoComplete='new-password'
+                        className='border border-gray-300 rounded-lg px-3 py-2 bg-white'
+                      />
+                    )}
+                  />
+                  {signUpForm.formState.errors.confirmPassword && (
+                    <Text className='text-red-500 text-sm'>
+                      {signUpForm.formState.errors.confirmPassword.message}
                     </Text>
                   )}
                 </VStack>
 
                 <Button
-                  onPress={loginForm.handleSubmit(onSignIn)}
+                  onPress={signUpForm.handleSubmit(onSignUp)}
                   className='mt-4'
                   isDisabled={isLoading}
                 >
-                  <ButtonText>{isLoading ? 'Entrando...' : 'Entrar'}</ButtonText>
+                  <ButtonText>
+                    {isLoading ? 'Criando conta...' : 'Criar conta'}
+                  </ButtonText>
                 </Button>
               </VStack>
             )}
 
-            {/* Divider e Google Sign In - só aparece no formulário de login */}
+            {/* Divider e Google Sign Up - só aparece no formulário de cadastro */}
             {!showCodeVerification && (
               <>
                 <HStack space='md' className='items-center my-4'>
@@ -194,7 +226,7 @@ export function LoginPage({
 
                 <Button
                   variant='outline'
-                  onPress={onSignInWithGoogle}
+                  onPress={onSignUpWithGoogle}
                   isDisabled={isLoading}
                 >
                   <ButtonText>Continuar com Google</ButtonText>
@@ -202,11 +234,11 @@ export function LoginPage({
               </>
             )}
 
-            {/* Sign Up Link */}
+            {/* Sign In Link */}
             <HStack space='sm' className='justify-center mt-8'>
-              <Text className='text-gray-600'>Não tem uma conta?</Text>
-              <Pressable onPress={onNavigateToSignUp}>
-                <Text className='text-blue-600 font-medium'>Cadastre-se</Text>
+              <Text className='text-gray-600'>Já tem uma conta?</Text>
+              <Pressable onPress={onNavigateToLogin}>
+                <Text className='text-blue-600 font-medium'>Entre aqui</Text>
               </Pressable>
             </HStack>
           </VStack>
