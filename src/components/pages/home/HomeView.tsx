@@ -107,25 +107,20 @@ export function HomeView({
             Navegar por Categoria
           </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <HStack className='space-x-6 pt-4 gap-4'>
+            <HStack className='space-x-4 pt-4 gap-6'>
               {browseCategories.map((category) => (
                 <TouchableOpacity
                   key={category.id}
-                  className='items-center min-w-[80px]'
+                  className='items-center min-w-[100px]'
                   onPress={() => onCategoryPress(category)}
                 >
                   <Box
-                    className={`w-16 h-16 ${category.color} rounded-full items-center justify-center mb-2 border-2 border-black`}
+                    className={`w-24 h-16 ${category.color || 'bg-gray-400'} rounded-lg items-center justify-center mb-2 border-2 border-black`}
                   >
-                    <Ionicons
-                      name={category.icon as any}
-                      size={24}
-                      color={category.iconColor}
-                    />
+                    <Text className='text-sm font-semibold text-center px-2 text-white'>
+                      {category.name}
+                    </Text>
                   </Box>
-                  <Text className='text-xs text-gray-600 text-center'>
-                    {category.name}
-                  </Text>
                 </TouchableOpacity>
               ))}
             </HStack>
@@ -153,94 +148,67 @@ export function HomeView({
                 </Text>
               </Box>
             ) : (
-              recipes.map((recipe) => {
-                console.log('🔍 DEBUG recipe completo:', recipe)
-                return (
-                  <TouchableOpacity key={recipe.id} onPress={() => onRecipePress(recipe)}>
-                    <Card className='overflow-hidden'>
-                      <HStack className='space-x-4'>
-                        <Image
-                          source={{ uri: recipe.image }}
-                          className='w-24 h-24 rounded-lg border-2 border-black'
-                          resizeMode='cover'
-                        />
-                        <VStack className='flex-1 py-2 space-y-1'>
-                          <HStack className='justify-between items-start'>
-                            <VStack className='flex-1 space-y-1 px-4'>
-                              <HStack className='items-center space-x-2'>
-                                <Box className='w-6 h-6 bg-blue-100 rounded-full items-center justify-center'>
-                                  <Ionicons name='person' size={12} color='#3B82F6' />
-                                </Box>
-                                <Text className='text-xs text-gray-600 px-2'>
-                                  by{' '}
-                                  {typeof recipe.author === 'string'
-                                    ? recipe.author
-                                    : (recipe.author as any)?.name ||
-                                      'Autor desconhecido'}
+              recipes.map((recipe) => (
+                <TouchableOpacity key={recipe.id} onPress={() => onRecipePress(recipe)}>
+                  <Card className='overflow-hidden'>
+                    <HStack className='space-x-4'>
+                      <Image
+                        source={{ uri: recipe.image }}
+                        className='w-24 h-24 rounded-lg border-2 border-black'
+                        resizeMode='cover'
+                      />
+                      <VStack className='flex-1 py-2 space-y-1'>
+                        <HStack className='justify-between items-start'>
+                          <VStack className='flex-1 space-y-1 px-4'>
+                            <HStack className='items-center space-x-2'>
+                              <Box className='w-6 h-6 bg-blue-100 rounded-full items-center justify-center'>
+                                <Ionicons name='person' size={12} color='#3B82F6' />
+                              </Box>
+                              <Text className='text-xs text-gray-600 px-2'>
+                                by {recipe.author.name || 'Autor desconhecido'}
+                              </Text>
+                            </HStack>
+                            <Text className='font-semibold text-gray-900'>
+                              {recipe.title}
+                            </Text>
+                            <HStack className='items-center space-x-3 gap-2'>
+                              <HStack className='items-center space-x-1'>
+                                <Ionicons name='heart' size={14} color='#EF4444' />
+                                <Text className='text-xs text-gray-600'>
+                                  {recipe.likes || 0}
                                 </Text>
                               </HStack>
-                              <Text className='font-semibold text-gray-900'>
-                                {recipe.title}
-                              </Text>
-                              <HStack className='items-center space-x-3 gap-2'>
-                                <HStack className='items-center space-x-1'>
-                                  <Ionicons name='heart' size={14} color='#EF4444' />
-                                  <Text className='text-xs text-gray-600'>
-                                    {(() => {
-                                      const likes = (recipe as any)._count?.favorites || 0
-                                      console.log(
-                                        '🔍 DEBUG recipe._count.favorites:',
-                                        likes,
-                                      )
-                                      return likes
-                                    })()}
-                                  </Text>
-                                </HStack>
-                                <HStack className='items-center space-x-1'>
-                                  <Ionicons name='time' size={14} color='#6B7280' />
-                                  <Text className='text-xs text-gray-600'>
-                                    {(() => {
-                                      const cookTime = recipe.cookMinutes || 0
-                                      console.log(
-                                        '🔍 DEBUG recipe.cookMinutes:',
-                                        cookTime,
-                                      )
-                                      return `${cookTime}min`
-                                    })()}
-                                  </Text>
-                                </HStack>
-                                <HStack className='items-center space-x-1'>
-                                  <Ionicons name='timer' size={14} color='#6B7280' />
-                                  <Text className='text-xs text-gray-600'>
-                                    {(() => {
-                                      console.log(
-                                        '🔍 DEBUG recipe.prepMinutes:',
-                                        recipe.prepMinutes,
-                                      )
-                                      return `${recipe.prepMinutes}min`
-                                    })()}
-                                  </Text>
-                                </HStack>
+                              <HStack className='items-center space-x-1'>
+                                <Ionicons name='time' size={14} color='#6B7280' />
+                                <Text className='text-xs text-gray-600'>
+                                  {recipe.cookMinutes}min
+                                </Text>
                               </HStack>
-                            </VStack>
-                            <VStack className='items-center space-y-2'>
-                              <TouchableOpacity onPress={() => onRecipeLike(recipe)}>
-                                <Box className='w-10 h-10 bg-gray-100 rounded-full items-center justify-center'>
-                                  <Ionicons
-                                    name='heart-outline'
-                                    size={20}
-                                    color='#6B7280'
-                                  />
-                                </Box>
-                              </TouchableOpacity>
-                            </VStack>
-                          </HStack>
-                        </VStack>
-                      </HStack>
-                    </Card>
-                  </TouchableOpacity>
-                )
-              })
+                              <HStack className='items-center space-x-1'>
+                                <Ionicons name='timer' size={14} color='#6B7280' />
+                                <Text className='text-xs text-gray-600'>
+                                  {recipe.prepMinutes}min
+                                </Text>
+                              </HStack>
+                            </HStack>
+                          </VStack>
+                          <VStack className='items-center space-y-2'>
+                            <TouchableOpacity onPress={() => onRecipeLike(recipe)}>
+                              <Box className='w-10 h-10 bg-gray-100 rounded-full items-center justify-center'>
+                                <Ionicons
+                                  name='heart-outline'
+                                  size={20}
+                                  color='#6B7280'
+                                />
+                              </Box>
+                            </TouchableOpacity>
+                          </VStack>
+                        </HStack>
+                      </VStack>
+                    </HStack>
+                  </Card>
+                </TouchableOpacity>
+              ))
             )}
           </VStack>
         </VStack>
