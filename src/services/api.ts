@@ -80,21 +80,11 @@ export const get = async <T = any>(
   url: string,
   config?: AxiosRequestConfig,
 ): Promise<T> => {
-  console.log('🌐 DEBUG API GET:', {
-    url,
-    fullUrl: `${api.defaults.baseURL}${url}`,
-    config,
-  })
   try {
     const response = await api.get<T>(url, config)
-    console.log('✅ DEBUG API GET success:', {
-      url,
-      status: response.status,
-      data: response.data,
-    })
     return response.data
   } catch (error) {
-    console.error('❌ DEBUG API GET error:', {
+    console.error('❌ Erro na API GET:', {
       url,
       error: error.response?.data || error.message,
       status: error.response?.status,

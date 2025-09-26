@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router'
 import { useCallback, useState } from 'react'
 import {
   useInfiniteRecipes,
@@ -9,6 +10,9 @@ import { useCategories } from '@/hooks/useCategories'
 import type { Category, Recipe } from '@/types/api'
 
 export function useHomePage() {
+  // Router para navegação
+  const router = useRouter()
+
   // Estados locais
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
@@ -17,13 +21,11 @@ export function useHomePage() {
   const {
     data: categories,
     loading: categoriesLoading,
-    error: categoriesError,
     refetch: refetchCategories,
   } = useCategories()
   const {
     data: recentRecipes,
     loading: recentLoading,
-    error: recentError,
     refetch: refetchRecent,
   } = useRecentRecipes(4)
   // const {
@@ -32,12 +34,6 @@ export function useHomePage() {
   //   error: popularError,
   //   refetch: refetchPopular,
   // } = usePopularRecipes(5)
-
-  // Debug logs
-  console.log('🔍 DEBUG useHomePage:', {
-    categories: { data: categories, loading: categoriesLoading, error: categoriesError },
-    recentRecipes: { data: recentRecipes, loading: recentLoading, error: recentError },
-  })
 
   // Hook para busca com debounce
   const { data: searchResults, loading: searchLoading } = useRecipeSearch(searchQuery)
@@ -48,9 +44,7 @@ export function useHomePage() {
     loadingMore,
     hasNextPage,
     loadMore,
-  } = useInfiniteRecipes(
-    selectedCategory ? { categoryId: selectedCategory.id } : undefined,
-  )
+  } = useInfiniteRecipes(selectedCategory ? { category: selectedCategory.id } : undefined)
 
   // Hook para gerenciar favoritos
   const {
@@ -77,21 +71,6 @@ export function useHomePage() {
   const browseCategories = Array.isArray(categories) ? categories : []
   const recipes = getDisplayRecipes()
 
-  // Debug detalhado das receitas e categorias
-  console.log('🔍 DEBUG recipes detalhado:', {
-    recentRecipes,
-    searchQuery,
-    selectedCategory,
-    recipes,
-    recipesLength: recipes.length,
-  })
-
-  console.log('🔍 DEBUG categories detalhado:', {
-    categories,
-    browseCategories,
-    categoriesLength: browseCategories.length,
-  })
-
   // Estados de loading
   const isLoading =
     categoriesLoading || recentLoading || (searchQuery ? searchLoading : false)
@@ -106,17 +85,14 @@ export function useHomePage() {
   // Handlers para eventos
   const handleSearchPress = useCallback(() => {
     // TODO: Implementar navegação para tela de busca
-    console.log('Search pressed')
   }, [])
 
   const handleFilterPress = useCallback(() => {
     // TODO: Implementar filtros
-    console.log('Filter pressed')
   }, [])
 
   const handleNotificationPress = useCallback(() => {
     // TODO: Implementar notificações
-    console.log('Notification pressed')
   }, [])
 
   const handleCategoryPress = useCallback((category: Category) => {
@@ -124,14 +100,15 @@ export function useHomePage() {
     setSearchQuery('') // Limpar busca quando selecionar categoria
   }, [])
 
-  const handleRecipePress = useCallback((recipe: Recipe) => {
-    // TODO: Implementar navegação para receita
-    console.log('Recipe pressed:', recipe)
-  }, [])
+  const handleRecipePress = useCallback(
+    (recipe: Recipe) => {
+      router.push(`/(auth)/recipe-[id]?id=${recipe.id}`)
+    },
+    [router],
+  )
 
   const handleViewAllRecipes = useCallback(() => {
     // TODO: Implementar navegação para todas as receitas
-    console.log('View all recipes pressed')
   }, [])
 
   const handleRecipeLike = useCallback(
@@ -161,7 +138,6 @@ export function useHomePage() {
 
   const handleDebugPress = useCallback(() => {
     // TODO: Implementar navegação para tela de debug
-    console.log('Debug pressed - implementar navegação')
   }, [])
 
   return {

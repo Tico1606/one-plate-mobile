@@ -47,12 +47,10 @@ export function useProfilePage() {
 
   const handleSettingsPress = () => {
     // TODO: Implementar navegação para configurações
-    console.log('Settings pressed')
   }
 
-  const handleMenuItemPress = (item: MenuItem) => {
+  const handleMenuItemPress = (_item: MenuItem) => {
     // TODO: Implementar navegação para item do menu
-    console.log('Menu item pressed:', item)
   }
 
   return {

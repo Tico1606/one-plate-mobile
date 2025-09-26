@@ -29,31 +29,45 @@ export function useRecipes(filters?: RecipeFilters) {
 }
 
 // Hook para buscar receita por ID
-export function useRecipe(id: number) {
+export function useRecipe(id: string | number) {
   const [data, setData] = useState<Recipe | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  const fetchRecipe = useCallback(async () => {
-    try {
-      setLoading(true)
-      setError(null)
-      const result = await recipesService.getById(id)
-      setData(result)
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Erro ao buscar receita')
-    } finally {
+  useEffect(() => {
+    if (!id) {
       setLoading(false)
+      return
     }
+
+    // Verificar se o ID é válido (pode ser string ou número)
+    if (typeof id === 'string' && id.trim() === '') {
+      setError('ID da receita inválido')
+      setLoading(false)
+      return
+    }
+
+    const fetchRecipe = async () => {
+      try {
+        setLoading(true)
+        setError(null)
+
+        // Converter para número apenas se for um número válido
+        const numericId =
+          typeof id === 'string' && !Number.isNaN(Number(id)) ? Number(id) : id
+        const result = await recipesService.getById(numericId)
+        setData(result)
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Erro ao buscar receita')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchRecipe()
   }, [id])
 
-  useEffect(() => {
-    if (id) {
-      fetchRecipe()
-    }
-  }, [id, fetchRecipe])
-
-  return { data, loading, error, refetch: fetchRecipe }
+  return { data, loading, error, refetch: () => {} }
 }
 
 // Hook para receitas populares (comentado - método não disponível)
