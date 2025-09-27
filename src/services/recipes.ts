@@ -7,11 +7,13 @@ export const recipesService = {
   getAll: async (filters?: RecipeFilters): Promise<PaginatedResponse<Recipe>> => {
     const params = new URLSearchParams()
 
-    if (filters?.categoryId) params.append('categoryId', filters.categoryId.toString())
+    if (filters?.category) params.append('categoryId', filters.category.toString())
     if (filters?.difficulty) params.append('difficulty', filters.difficulty)
-    if (filters?.time) params.append('time', filters.time)
-    if (filters?.rating) params.append('rating', filters.rating.toString())
+    if (filters?.maxTime) params.append('maxTime', filters.maxTime.toString())
+    if (filters?.minRating) params.append('minRating', filters.minRating.toString())
     if (filters?.search) params.append('search', filters.search)
+    if (filters?.sortBy) params.append('sortBy', filters.sortBy)
+    if (filters?.sortOrder) params.append('sortOrder', filters.sortOrder)
     if (filters?.page) params.append('page', filters.page.toString())
     if (filters?.limit) params.append('limit', filters.limit.toString())
 
@@ -20,7 +22,58 @@ export const recipesService = {
       ? `${API_CONFIG.ENDPOINTS.RECIPES.LIST}?${queryString}`
       : API_CONFIG.ENDPOINTS.RECIPES.LIST
 
-    return get<PaginatedResponse<Recipe>>(url)
+    try {
+      const result = await get<any>(url)
+
+      // Verificar se a resposta tem a estrutura esperada
+      if (result.data?.recipes) {
+        return result.data
+      } else if (result.recipes) {
+        // Se retornar diretamente as receitas, criar estrutura de paginação
+        const currentPage = filters?.page || 1
+        const limit = filters?.limit || 10
+        const totalRecipes = result.total || result.recipes.length
+        const totalPages = Math.ceil(totalRecipes / limit)
+
+        return {
+          data: result.recipes,
+          pagination: {
+            page: currentPage,
+            limit,
+            total: totalRecipes,
+            totalPages,
+            hasNext: currentPage < totalPages,
+            hasPrev: currentPage > 1,
+          },
+        }
+      } else {
+        console.error('❌ Estrutura de resposta inesperada:', result)
+        return {
+          data: [],
+          pagination: {
+            page: 1,
+            limit: 10,
+            total: 0,
+            totalPages: 0,
+            hasNext: false,
+            hasPrev: false,
+          },
+        }
+      }
+    } catch (error) {
+      console.error('❌ Erro ao buscar receitas:', error)
+      return {
+        data: [],
+        pagination: {
+          page: 1,
+          limit: 10,
+          total: 0,
+          totalPages: 0,
+          hasNext: false,
+          hasPrev: false,
+        },
+      }
+    }
   },
 
   // Buscar receita por ID
@@ -262,9 +315,9 @@ export const recipesService = {
   // Buscar receitas por categoria
   getByCategory: async (
     categoryId: number,
-    filters?: Omit<RecipeFilters, 'categoryId'>,
+    filters?: Omit<RecipeFilters, 'category'>,
   ): Promise<PaginatedResponse<Recipe>> => {
-    return recipesService.getAll({ ...filters, categoryId })
+    return recipesService.getAll({ ...filters, category: categoryId.toString() })
   },
 
   // Buscar receitas populares

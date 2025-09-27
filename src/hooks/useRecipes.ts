@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { recipesService } from '@/services/recipes'
 import type { PaginatedResponse, Recipe, RecipeFilters } from '@/types/api'
 
@@ -8,18 +8,41 @@ export function useRecipes(filters?: RecipeFilters) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Memoizar os filtros para evitar re-renders desnecessários
+  const memoizedFilters = useMemo(
+    () => filters,
+    [
+      filters?.page,
+      filters?.limit,
+      filters?.search,
+      filters?.category,
+      filters?.sortBy,
+      filters?.sortOrder,
+      filters?.difficulty,
+      filters?.maxTime,
+      filters?.maxCalories,
+      filters?.minProtein,
+      filters?.minRating,
+      filters?.minLikes,
+      filters?.authorId,
+      filters?.status,
+      filters?.featured,
+      filters,
+    ],
+  )
+
   const fetchRecipes = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
-      const result = await recipesService.getAll(filters)
+      const result = await recipesService.getAll(memoizedFilters)
       setData(result)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao buscar receitas')
     } finally {
       setLoading(false)
     }
-  }, [filters])
+  }, [memoizedFilters])
 
   useEffect(() => {
     fetchRecipes()

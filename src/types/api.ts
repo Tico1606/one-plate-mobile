@@ -185,7 +185,7 @@ export interface RecipeFilters {
     | 'cookMinutes'
     | 'calories'
     | 'rating'
-    | 'likes'
+    | 'favorites'
   sortOrder?: 'asc' | 'desc'
 }
 
