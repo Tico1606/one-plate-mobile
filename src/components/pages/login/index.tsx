@@ -7,5 +7,7 @@ export function LoginPage() {
   return <LoginView {...loginPageData} />
 }
 
+export { LoginForm } from './LoginForm'
 export { LoginView } from './LoginView'
 export { useLoginPage } from './useLoginPage'
+export { VerifyCodeForm } from './VerifyCodeForm'

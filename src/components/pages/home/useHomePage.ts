@@ -108,8 +108,8 @@ export function useHomePage() {
   )
 
   const handleViewAllRecipes = useCallback(() => {
-    // TODO: Implementar navegação para todas as receitas
-  }, [])
+    router.push('/(auth)/(tabs)/explore')
+  }, [router])
 
   const handleRecipeLike = useCallback(
     (recipe: Recipe) => {

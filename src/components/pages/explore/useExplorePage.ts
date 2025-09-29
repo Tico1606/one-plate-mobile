@@ -4,7 +4,13 @@ import { useRecipeFavorites, useRecipes } from '@/hooks'
 import { useCategories } from '@/hooks/useCategories'
 import type { Category, Recipe, RecipeFilters } from '@/types/api'
 
-export type SortOption = 'recent' | 'oldest' | 'most_favorites' | 'least_favorites'
+export type SortOption =
+  | 'createdAt'
+  | 'averageRating'
+  | 'difficulty'
+  | 'prepTime'
+  | 'servings'
+export type SortDirection = 'asc' | 'desc'
 
 export function useExplorePage() {
   // Router para navegação
@@ -14,7 +20,8 @@ export function useExplorePage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
-  const [sortBy, setSortBy] = useState<SortOption>('recent')
+  const [sortBy, setSortBy] = useState<SortOption>('createdAt')
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
   const [totalPages, setTotalPages] = useState(1)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
 
@@ -29,36 +36,11 @@ export function useExplorePage() {
 
   // Construir filtros para a API com useMemo para evitar re-renders
   const filters = useMemo((): RecipeFilters => {
-    let sortByField: string
-    let sortOrder: 'asc' | 'desc'
-
-    switch (sortBy) {
-      case 'recent':
-        sortByField = 'createdAt'
-        sortOrder = 'desc'
-        break
-      case 'oldest':
-        sortByField = 'createdAt'
-        sortOrder = 'asc'
-        break
-      case 'most_favorites':
-        sortByField = 'favorites'
-        sortOrder = 'desc'
-        break
-      case 'least_favorites':
-        sortByField = 'favorites'
-        sortOrder = 'asc'
-        break
-      default:
-        sortByField = 'createdAt'
-        sortOrder = 'desc'
-    }
-
     const baseFilters: RecipeFilters = {
       page: currentPage,
       limit: 10, // Backend retorna 10 receitas por página
-      sortBy: sortByField as any,
-      sortOrder,
+      sortBy: sortBy as any,
+      sortOrder: sortDirection,
     }
 
     if (selectedCategory) {
@@ -70,7 +52,7 @@ export function useExplorePage() {
     }
 
     return baseFilters
-  }, [currentPage, sortBy, selectedCategory, searchQuery])
+  }, [currentPage, sortBy, sortDirection, selectedCategory, searchQuery])
 
   // Hook para buscar receitas com paginação
   const {
@@ -182,6 +164,12 @@ export function useExplorePage() {
     setIsDropdownOpen(false) // Fechar dropdown
   }, [])
 
+  // Handler para mudança de direção da ordenação
+  const handleSortDirectionToggle = useCallback(() => {
+    setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'))
+    setCurrentPage(1) // Resetar para primeira página
+  }, [])
+
   // Handler para abrir/fechar dropdown
   const handleDropdownToggle = useCallback(() => {
     setIsDropdownOpen((prev) => !prev)
@@ -200,6 +188,7 @@ export function useExplorePage() {
     searchQuery,
     selectedCategory,
     sortBy,
+    sortDirection,
     currentPage,
     totalPages,
     isDropdownOpen,
@@ -227,6 +216,7 @@ export function useExplorePage() {
     onNextPage: handleNextPage,
     onPrevPage: handlePrevPage,
     onSortChange: handleSortChange,
+    onSortDirectionToggle: handleSortDirectionToggle,
     onDropdownToggle: handleDropdownToggle,
     onDebugPress: handleDebugPress,
 

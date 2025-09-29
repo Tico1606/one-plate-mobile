@@ -7,13 +7,14 @@ import {
   TouchableOpacity,
 } from 'react-native'
 
+import { Header, SearchBar } from '@/components/global'
 import { Box } from '@/components/ui/box'
 import { Card } from '@/components/ui/card'
 import { HStack } from '@/components/ui/hstack'
 import { Text } from '@/components/ui/text'
 import { VStack } from '@/components/ui/vstack'
 import type { Category, Recipe } from '@/types/api'
-import type { SortOption } from './useExplorePage'
+import type { SortDirection, SortOption } from './useExplorePage'
 
 interface ExploreViewProps {
   // Dados
@@ -21,6 +22,7 @@ interface ExploreViewProps {
   recipes: Recipe[]
   isLoading: boolean
   sortBy: SortOption
+  sortDirection: SortDirection
   currentPage: number
   totalPages: number
   hasNextPage: boolean
@@ -38,14 +40,16 @@ interface ExploreViewProps {
   onNextPage: () => void
   onPrevPage: () => void
   onSortChange: (sort: SortOption) => void
+  onSortDirectionToggle: () => void
   onDropdownToggle: () => void
 }
 
 const sortOptions = [
-  { value: 'recent' as SortOption, label: 'Mais Recentes' },
-  { value: 'oldest' as SortOption, label: 'Menos Antigas' },
-  { value: 'most_liked' as SortOption, label: 'Mais Favoritadas' },
-  { value: 'least_liked' as SortOption, label: 'Menos Favoritadas' },
+  { value: 'createdAt' as SortOption, label: 'Data de Criação' },
+  { value: 'averageRating' as SortOption, label: 'Avaliação' },
+  { value: 'difficulty' as SortOption, label: 'Dificuldade' },
+  { value: 'prepTime' as SortOption, label: 'Tempo de Preparo' },
+  { value: 'servings' as SortOption, label: 'Quantidade de Porções' },
 ]
 
 export function ExploreView({
@@ -53,13 +57,14 @@ export function ExploreView({
   recipes,
   isLoading,
   sortBy,
+  sortDirection,
   currentPage,
   totalPages,
   hasNextPage,
   hasPrevPage,
   isDropdownOpen,
   onRetry,
-  onSearchPress,
+  // onSearchPress,
   onFilterPress,
   onNotificationPress,
   onCategoryPress,
@@ -68,12 +73,12 @@ export function ExploreView({
   onNextPage,
   onPrevPage,
   onSortChange,
+  onSortDirectionToggle,
   onDropdownToggle,
 }: ExploreViewProps) {
-  // Loading state
   if (isLoading) {
     return (
-      <Box className='flex-1 bg-white justify-center items-center'>
+      <Box className='flex-1 justify-center items-center'>
         <ActivityIndicator size='large' color='#8B5CF6' />
         <Text className='mt-4 text-gray-600'>Carregando...</Text>
       </Box>
@@ -81,7 +86,7 @@ export function ExploreView({
   }
 
   return (
-    <Box className='flex-1 bg-white'>
+    <Box className='flex-1'>
       <TouchableOpacity
         className='flex-1'
         activeOpacity={1}
@@ -99,42 +104,14 @@ export function ExploreView({
           }
         >
           {/* Header */}
-          <HStack className='justify-between items-center px-6 py-10'>
-            <HStack className='items-center space-x-3'>
-              <Box className='w-8 h-8 bg-purple-500 rounded-lg items-center justify-center'>
-                <Ionicons name='restaurant' size={20} color='white' />
-              </Box>
-              <Text className='text-xl font-bold pl-4 text-gray-900'>One Plate</Text>
-            </HStack>
-            <HStack className='space-x-5 gap-4'>
-              <TouchableOpacity onPress={onSearchPress}>
-                <Ionicons name='search' size={24} color='#374151' />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={onNotificationPress}>
-                <Ionicons name='notifications' size={24} color='#374151' />
-              </TouchableOpacity>
-              {isLoading && <ActivityIndicator size='small' color='#8B5CF6' />}
-            </HStack>
-          </HStack>
+          <Header isLoading={isLoading} onNotificationPress={onNotificationPress} />
 
           {/* Search Bar */}
-          <Box className='mx-6 mb-6'>
-            <HStack className='bg-gray-100 rounded-xl px-4 py-3 items-center space-x-3'>
-              <Ionicons name='search' size={22} color='#8B5CF6' />
-              <Box className='flex-1'>
-                <Text className='text-gray-500 text-base' numberOfLines={1}>
-                  Buscar receitas, ingredientes...
-                </Text>
-              </Box>
-              <TouchableOpacity onPress={onFilterPress}>
-                <Ionicons name='options-outline' size={22} color='#6B7280' />
-              </TouchableOpacity>
-            </HStack>
-          </Box>
+          <SearchBar onSearchPress={() => {}} onFilterPress={onFilterPress} />
 
           {/* Browse by Category */}
           <VStack className='px-6 mb-4'>
-            <Text className='text-lg font-bold text-gray-900 mb-4'>
+            <Text className='text-xl font-bold text-gray-900 mb-4'>
               Navegar por Categoria
             </Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -145,10 +122,8 @@ export function ExploreView({
                     className='items-center min-w-[100px]'
                     onPress={() => onCategoryPress(category)}
                   >
-                    <Box
-                      className={`w-24 h-16 ${category.color || 'bg-gray-400'} rounded-lg items-center justify-center mb-2 border-2 border-black`}
-                    >
-                      <Text className='text-sm font-semibold text-center px-2 text-white'>
+                    <Box className='w-24 h-16 bg-white-100 rounded-lg items-center justify-center mb-2 border-2 border-purple-400'>
+                      <Text className='text-sm font-semibold text-center px-2 text-purple-500'>
                         {category.name}
                       </Text>
                     </Box>
@@ -161,28 +136,45 @@ export function ExploreView({
           {/* Recipes Grid */}
           <VStack className='px-6 my-4'>
             <HStack className='justify-between items-center mb-4'>
-              <Text className='text-lg font-bold text-gray-900'>Receitas</Text>
+              <Text className='text-xl font-bold text-gray-900'>
+                Receitas Publicadas
+              </Text>
 
               {/* Sort Selector */}
               <HStack className='items-center space-x-2 gap-4'>
                 <Box className='relative'>
-                  <TouchableOpacity
-                    className='flex-row items-center space-x-1 px-3 py-2 bg-gray-100 rounded-lg'
-                    onPress={onDropdownToggle}
-                  >
-                    <Text className='text-sm font-medium text-gray-700'>
-                      {sortOptions.find((option) => option.value === sortBy)?.label}
-                    </Text>
-                    <Ionicons
-                      name={isDropdownOpen ? 'chevron-up' : 'chevron-down'}
-                      size={16}
-                      color='#6B7280'
-                    />
-                  </TouchableOpacity>
+                  <HStack className='items-center space-x-2 gap-2'>
+                    {/* Botão de direção da ordenação */}
+                    <TouchableOpacity
+                      className='w-8 h-8 bg-white rounded-lg items-center justify-center border border-gray-200'
+                      onPress={onSortDirectionToggle}
+                    >
+                      <Ionicons
+                        name={sortDirection === 'asc' ? 'arrow-up' : 'arrow-down'}
+                        size={16}
+                        color='#6B7280'
+                      />
+                    </TouchableOpacity>
+
+                    {/* Botão de seleção de ordenação */}
+                    <TouchableOpacity
+                      className='flex-row items-center space-x-1 px-3 py-2 bg-white rounded-lg gap-1'
+                      onPress={onDropdownToggle}
+                    >
+                      <Text className='text-sm font-medium text-gray-700'>
+                        {sortOptions.find((option) => option.value === sortBy)?.label}
+                      </Text>
+                      <Ionicons
+                        name={isDropdownOpen ? 'chevron-up' : 'chevron-down'}
+                        size={16}
+                        color='#6B7280'
+                      />
+                    </TouchableOpacity>
+                  </HStack>
 
                   {/* Dropdown - Posicionado abaixo do seletor */}
                   {isDropdownOpen && (
-                    <Box className='absolute top-full right-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 min-w-[180px] z-50'>
+                    <Box className='absolute top-full left-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 min-w-[180px] z-50'>
                       <VStack className='py-2'>
                         {sortOptions.map((option) => (
                           <TouchableOpacity
@@ -233,52 +225,82 @@ export function ExploreView({
                     className='w-[48%] mb-4'
                     onPress={() => onRecipePress(recipe)}
                   >
-                    <Card className='overflow-hidden'>
+                    <Card className='overflow-hidden bg-white rounded-lg border border-gray-200'>
                       <VStack className='space-y-2'>
-                        <Image
-                          source={{ uri: recipe.image }}
-                          className='w-full h-32 rounded-lg border-2 border-black'
-                          resizeMode='cover'
-                        />
-                        <VStack className='px-2 pb-2 space-y-1'>
-                          <HStack className='items-center space-x-2'>
-                            <Text
-                              className='text-xs text-gray-600 flex-1'
-                              numberOfLines={1}
-                            >
-                              Por {recipe.author.name || 'Autor desconhecido'}
+                        {/* Container da imagem com overlays */}
+                        <Box className='relative'>
+                          <Image
+                            source={{ uri: recipe.image }}
+                            className='w-full h-32 rounded-lg border border-gray-200'
+                            resizeMode='cover'
+                          />
+
+                          {/* Overlay do tempo de preparo (canto inferior esquerdo) */}
+                          <Box className='absolute bottom-2 left-2 bg-gray-50/80 rounded-xl px-2 py-1 m-1 border border-gray-200'>
+                            <Text className='text-xs font-medium text-gray-800'>
+                              {recipe.prepTime} min
                             </Text>
-                          </HStack>
+                          </Box>
+
+                          {/* Botão de coração (canto superior direito) */}
+                          <TouchableOpacity
+                            className='absolute top-2 right-2 w-8 h-8 bg-gray-50/80 rounded-full items-center justify-center border border-gray-200'
+                            onPress={() => onRecipeLike(recipe)}
+                          >
+                            <Ionicons name='heart-outline' size={16} color='#6B7280' />
+                          </TouchableOpacity>
+                        </Box>
+
+                        <VStack className='py-2 space-y-1'>
                           <Text
                             className='font-semibold text-gray-900 text-sm'
                             numberOfLines={2}
                           >
                             {recipe.title}
                           </Text>
-                          <HStack className='items-center justify-between'>
-                            <HStack className='items-center space-x-2'>
-                              <HStack className='items-center space-x-1'>
-                                <Ionicons name='heart' size={12} color='#EF4444' />
-                                <Text className='text-xs text-gray-600'>
-                                  {recipe.likes || 0}
-                                </Text>
-                              </HStack>
-                              <HStack className='items-center space-x-1'>
-                                <Ionicons name='time' size={12} color='#6B7280' />
-                                <Text className='text-xs text-gray-600'>
-                                  {recipe.cookMinutes}min
-                                </Text>
-                              </HStack>
+
+                          {/* Nota e categoria */}
+                          <HStack className='items-center space-x-2 px-1 pt-1 gap-12'>
+                            <HStack className='items-center space-x-1 gap-1'>
+                              <Ionicons name='star' size={12} color='#F59E0B' />
+                              <Text className='text-xs text-gray-600'>
+                                {recipe.averageRating || '1'}
+                              </Text>
                             </HStack>
-                            <TouchableOpacity onPress={() => onRecipeLike(recipe)}>
-                              <Box className='w-8 h-8 bg-gray-100 rounded-full items-center justify-center'>
-                                <Ionicons
-                                  name='heart-outline'
-                                  size={16}
-                                  color='#6B7280'
-                                />
-                              </Box>
-                            </TouchableOpacity>
+                            <Text
+                              className='text-xs text-gray-600 flex-1'
+                              numberOfLines={1}
+                            >
+                              Por{' '}
+                              {recipe.author.name
+                                ? (() => {
+                                    const parts = recipe.author.name.trim().split(' ')
+                                    const firstName = parts[0]
+                                    const lastInitial = parts[1]?.[0]
+                                      ? ` ${parts[1][0]}.`
+                                      : ''
+                                    return firstName + lastInitial
+                                  })()
+                                : 'Autor desconhecido'}
+                            </Text>
+                          </HStack>
+
+                          <HStack className='flex-wrap gap-2 pt-2'>
+                            {recipe.categories && recipe.categories.length > 0 && (
+                              // biome-ignore lint/complexity/noUselessFragments: mandatory by React Native
+                              <>
+                                {recipe.categories.slice(0, 2).map((category) => (
+                                  <Box
+                                    key={category.id}
+                                    className='bg-gray-100 px-2 py-1 rounded-full'
+                                  >
+                                    <Text className='text-xs text-gray-800 font-medium'>
+                                      {category.name}
+                                    </Text>
+                                  </Box>
+                                ))}
+                              </>
+                            )}
                           </HStack>
                         </VStack>
                       </VStack>

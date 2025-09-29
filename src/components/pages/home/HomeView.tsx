@@ -6,7 +6,8 @@ import {
   ScrollView,
   TouchableOpacity,
 } from 'react-native'
-
+import { Header } from '@/components/global/Header'
+import { SearchBar } from '@/components/global/SearchBar'
 import { Box } from '@/components/ui/box'
 import { Card } from '@/components/ui/card'
 import { HStack } from '@/components/ui/hstack'
@@ -47,7 +48,7 @@ export function HomeView({
   // Loading state
   if (isLoading) {
     return (
-      <Box className='flex-1 bg-white justify-center items-center'>
+      <Box className='flex-1 bg-zinc-100 justify-center items-center'>
         <ActivityIndicator size='large' color='#8B5CF6' />
         <Text className='mt-4 text-gray-600'>Carregando...</Text>
       </Box>
@@ -55,7 +56,7 @@ export function HomeView({
   }
 
   return (
-    <Box className='flex-1 bg-white'>
+    <Box className='flex-1 bg-zinc-100'>
       <ScrollView
         showsVerticalScrollIndicator={false}
         refreshControl={
@@ -68,42 +69,18 @@ export function HomeView({
         }
       >
         {/* Header */}
-        <HStack className='justify-between items-center px-6 py-10'>
-          <HStack className='items-center space-x-3'>
-            <Box className='w-8 h-8 bg-purple-500 rounded-lg items-center justify-center'>
-              <Ionicons name='restaurant' size={20} color='white' />
-            </Box>
-            <Text className='text-xl font-bold pl-4 text-gray-900'>One Plate</Text>
-          </HStack>
-          <HStack className='space-x-5 gap-4'>
-            <TouchableOpacity onPress={onSearchPress}>
-              <Ionicons name='search' size={24} color='#374151' />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={onNotificationPress}>
-              <Ionicons name='notifications' size={24} color='#374151' />
-            </TouchableOpacity>
-            {isLoading && <ActivityIndicator size='small' color='#8B5CF6' />}
-          </HStack>
-        </HStack>
+        <Header isLoading={isLoading} onNotificationPress={onNotificationPress} />
 
         {/* Search Bar */}
-        <Box className='mx-6 mb-6'>
-          <HStack className='bg-gray-100 rounded-xl px-4 py-3 items-center space-x-3'>
-            <Ionicons name='search' size={22} color='#8B5CF6' />
-            <Box className='flex-1'>
-              <Text className='text-gray-500 text-base' numberOfLines={1}>
-                Buscar receitas, ingredientes...
-              </Text>
-            </Box>
-            <TouchableOpacity onPress={onFilterPress}>
-              <Ionicons name='options-outline' size={22} color='#6B7280' />
-            </TouchableOpacity>
-          </HStack>
-        </Box>
+        <SearchBar
+          placeholder='Buscar receitas, ingredientes...'
+          onSearchPress={onSearchPress}
+          onFilterPress={onFilterPress}
+        />
 
         {/* Browse by Category */}
         <VStack className='px-6 mb-4'>
-          <Text className='text-lg font-bold text-gray-900 mb-4'>
+          <Text className='text-xl font-bold text-gray-900 mb-4'>
             Navegar por Categoria
           </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
@@ -114,10 +91,8 @@ export function HomeView({
                   className='items-center min-w-[100px]'
                   onPress={() => onCategoryPress(category)}
                 >
-                  <Box
-                    className={`w-24 h-16 ${category.color || 'bg-gray-400'} rounded-lg items-center justify-center mb-2 border-2 border-black`}
-                  >
-                    <Text className='text-sm font-semibold text-center px-2 text-white'>
+                  <Box className='w-24 h-16 bg-white-100 rounded-lg items-center justify-center mb-2 border-2 border-purple-400'>
+                    <Text className='text-sm font-semibold text-center px-2 text-purple-500'>
                       {category.name}
                     </Text>
                   </Box>
@@ -129,14 +104,14 @@ export function HomeView({
 
         {/* Recent Recipes */}
         <VStack className='px-6 my-4'>
-          <HStack className='justify-between items-center mb-2'>
-            <Text className='text-lg font-bold text-gray-900'>Receitas</Text>
+          <HStack className='justify-between items-center mb-4'>
+            <Text className='text-xl font-bold text-gray-900'>Receitas Recentes</Text>
             <TouchableOpacity onPress={onViewAllRecipes}>
-              <Text className='text-blue-500 font-medium'>Ver Todas</Text>
+              <Text className='text-purple-500 font-bold px-2'>Ver Todas</Text>
             </TouchableOpacity>
           </HStack>
 
-          <VStack className='space-y-5'>
+          <VStack className='space-y-5 py-2 gap-4'>
             {recipes.length === 0 ? (
               <Box className='items-center py-8'>
                 <Ionicons name='restaurant-outline' size={48} color='#9CA3AF' />
@@ -154,12 +129,12 @@ export function HomeView({
                     <HStack className='space-x-4'>
                       <Image
                         source={{ uri: recipe.image }}
-                        className='w-24 h-24 rounded-lg border-2 border-black'
+                        className='w-24 h-24 rounded-lg border border-gray-200'
                         resizeMode='cover'
                       />
                       <VStack className='flex-1 py-2 space-y-1'>
                         <HStack className='justify-between items-start'>
-                          <VStack className='flex-1 space-y-1 px-4'>
+                          <VStack className='flex-1 space-y-1 px-4 gap-1'>
                             <HStack className='items-center space-x-2'>
                               <Box className='w-6 h-6 bg-blue-100 rounded-full items-center justify-center'>
                                 <Ionicons name='person' size={12} color='#3B82F6' />
@@ -173,21 +148,15 @@ export function HomeView({
                             </Text>
                             <HStack className='items-center space-x-3 gap-2'>
                               <HStack className='items-center space-x-1'>
-                                <Ionicons name='heart' size={14} color='#EF4444' />
-                                <Text className='text-xs text-gray-600'>
-                                  {recipe.likes || 0}
+                                <Ionicons name='star' size={14} color='#F59E0B' />
+                                <Text className='text-xs text-gray-600 px-1'>
+                                  {recipe.averageRating || '0'}
                                 </Text>
                               </HStack>
                               <HStack className='items-center space-x-1'>
                                 <Ionicons name='time' size={14} color='#6B7280' />
-                                <Text className='text-xs text-gray-600'>
-                                  {recipe.cookMinutes}min
-                                </Text>
-                              </HStack>
-                              <HStack className='items-center space-x-1'>
-                                <Ionicons name='timer' size={14} color='#6B7280' />
-                                <Text className='text-xs text-gray-600'>
-                                  {recipe.prepMinutes}min
+                                <Text className='text-xs text-gray-600 px-1'>
+                                  {recipe.prepTime}min
                                 </Text>
                               </HStack>
                             </HStack>
