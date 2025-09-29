@@ -22,6 +22,11 @@ export const API_CONFIG = {
     CATEGORIES: {
       LIST: '/categories',
     },
+    INGREDIENTS: {
+      LIST: '/ingredients', // GET - Listar ingredientes
+      DETAIL: '/ingredients/:id', // GET - Buscar ingrediente por ID
+      CREATE: '/ingredients', // POST - Criar ingrediente
+    },
     USERS: {
       LIST: '/users', // GET - Listar usuários (admin)
       DETAIL: '/users/:id', // GET - Buscar usuário por ID (admin/próprio)

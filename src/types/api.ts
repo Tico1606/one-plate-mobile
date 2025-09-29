@@ -15,14 +15,11 @@ export interface Recipe {
   id: string
   title: string
   description?: string
+  authorId: string
   author: User
   difficulty: Difficulty
-  prepMinutes: number
-  cookMinutes: number
-  totalMinutes: number
+  prepTime: number // Tempo total de preparo em minutos
   servings: number
-  image: string
-  images: string[]
   videoUrl?: string
   source?: string
   calories?: number
@@ -30,23 +27,32 @@ export interface Recipe {
   carbGrams?: number
   fatGrams?: number
   status: RecipeStatus
-  publishedAt?: string
-  createdAt: string
-  updatedAt: string
+  publishedAt?: Date
+  createdAt: Date
+  updatedAt: Date
 
-  // Engajamento
-  rating: number
-  totalRatings: number
-  likes: number
-  views: number
-  isLiked: boolean
-  isViewed: boolean
+  // Engajamento (campos calculados pelo backend)
+  averageRating: number // Média das avaliações (0-5)
+  totalReviews: number // Quantidade de avaliações
+  totalFavorites: number // Quantidade de favoritos
+  totalViews: number // Quantidade de visualizações
+  image: string // Primeira foto ou placeholder
 
   // Conteúdo
+  photos: RecipePhoto[]
   ingredients: RecipeIngredient[]
   instructions: RecipeInstruction[]
   categories: Category[]
   reviews: Review[]
+  favorites: Favorite[]
+  views: RecipeView[]
+}
+
+export interface RecipePhoto {
+  id: string
+  recipeId: string
+  url: string
+  order: number
 }
 
 export interface RecipeIngredient {
@@ -54,27 +60,45 @@ export interface RecipeIngredient {
   name: string
   amount?: number
   unit?: string
-  note?: string
-  group?: string
-  imageUrl?: string
+}
+
+export interface Ingredient {
+  name: string
+  amount: string
+  unit: string
 }
 
 export interface RecipeInstruction {
   id: string
   order: number
   description: string
-  durationMinutes?: number
-  imageUrl?: string
+  durationSec?: number
+}
+
+export interface Instruction {
+  description: string
 }
 
 export interface Review {
   id: string
   user: User
-  rating: number
+  rating: number // Rating de 1-5
   comment?: string
-  helpfulCount: number
-  createdAt: string
-  isHelpful?: boolean
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface Favorite {
+  userId: string
+  recipeId: string
+  createdAt: Date
+}
+
+export interface RecipeView {
+  id: string
+  userId?: string
+  recipeId: string
+  createdAt: Date
 }
 
 // =============================================================================
@@ -84,9 +108,6 @@ export interface Review {
 export interface Category {
   id: string
   name: string
-  icon?: string
-  color?: string
-  recipeCount: number
 }
 
 // =============================================================================
@@ -97,14 +118,12 @@ export interface User {
   id: string
   email: string
   name?: string
-  firstName?: string
-  lastName?: string
-  avatar?: string
   photoUrl?: string
   role: Role
-  bio?: string
-  createdAt: string
-  updatedAt: string
+  createdAt: Date
+  updatedAt: Date
+
+  // Estatísticas (campos calculados pelo backend)
   stats?: UserStats
 }
 
@@ -165,40 +184,54 @@ export interface PaginatedResponse<T> {
 // =============================================================================
 
 export interface RecipeFilters {
+  // Filtros básicos
   search?: string
   category?: string
   difficulty?: Difficulty
-  maxTime?: number
+  prepTime?: number // Tempo de preparo em minutos
+  servings?: number // Número de porções
+
+  // Filtros nutricionais
   maxCalories?: number
   minProtein?: number
+
+  // Filtros de engajamento
   minRating?: number
-  minLikes?: number
+  minFavorites?: number
+
+  // Filtros de autor
   authorId?: string
+
+  // Filtros de status
   status?: RecipeStatus
   featured?: boolean
+
+  // Paginação
   page?: number
   limit?: number
+
+  // Ordenação
   sortBy?:
     | 'createdAt'
     | 'title'
-    | 'prepMinutes'
-    | 'cookMinutes'
+    | 'prepTime'
     | 'calories'
-    | 'rating'
+    | 'averageRating'
     | 'favorites'
+    | 'servings'
+    | 'difficulty'
   sortOrder?: 'asc' | 'desc'
 }
 
 // =============================================================================
-// TIPOS PARA CRIAÇÃO E EDIÇÃO DE RECEITAS
+// TIPOS PARA CRIAÇÃO E EDIÇÃO
 // =============================================================================
 
 export interface CreateRecipeRequest {
   title: string
   description?: string
   difficulty: Difficulty
-  prepMinutes: number
-  cookMinutes: number
+  prepTime: number
   servings: number
   videoUrl?: string
   source?: string
@@ -206,19 +239,19 @@ export interface CreateRecipeRequest {
   proteinGrams?: number
   carbGrams?: number
   fatGrams?: number
-  images: string[]
+
+  // Conteúdo
+  images?: string[] // URLs das imagens
   ingredients: Array<{
-    name: string
-    amount?: number
-    unit?: string
-    note?: string
-    group?: string
+    ingredientId: string
+    amount: number
+    unit: string
   }>
-  instructions: Array<{
+  steps: Array<{
+    order: number
     description: string
-    durationMinutes?: number
   }>
-  categories: string[]
+  categories: string[] // IDs das categorias
 }
 
 export interface UpdateRecipeRequest extends Partial<CreateRecipeRequest> {
@@ -227,15 +260,11 @@ export interface UpdateRecipeRequest extends Partial<CreateRecipeRequest> {
 
 export interface CreateCategoryRequest {
   name: string
-  icon?: string
-  color?: string
 }
 
 export interface UpdateCategoryRequest {
   id: string
   name: string
-  icon?: string
-  color?: string
 }
 
 // =============================================================================
@@ -244,13 +273,13 @@ export interface UpdateCategoryRequest {
 
 export interface CreateReviewRequest {
   recipeId: string
-  rating: number
+  rating: number // Rating de 1-5
   comment?: string
 }
 
 export interface UpdateReviewRequest {
   id: string
-  rating?: number
+  rating?: number // Rating de 1-5
   comment?: string
 }
 
@@ -258,9 +287,7 @@ export interface ToggleFavoriteRequest {
   recipeId: string
 }
 
-export interface ToggleHelpfulRequest {
-  reviewId: string
-}
+// Removido: ToggleHelpfulRequest - não há mais sistema de "útil"
 
 // =============================================================================
 // TIPOS PARA DASHBOARD E ESTATÍSTICAS
@@ -290,28 +317,25 @@ export interface UserProfile {
 
 export interface RecipeFormData {
   title: string
-  description?: string
+  description: string
   difficulty: Difficulty
-  prepMinutes: number
-  cookMinutes: number
+  prepTime: number
   servings: number
-  videoUrl?: string
-  source?: string
-  calories?: number
-  proteinGrams?: number
-  carbGrams?: number
-  fatGrams?: number
+  videoUrl: string
+  source: string
+  calories: number
+  proteinGrams: number
+  carbGrams: number
+  fatGrams: number
   images: File[] | string[]
   ingredients: Array<{
     name: string
-    amount?: number
-    unit?: string
-    note?: string
-    group?: string
+    amount: number
+    unit: string
   }>
   instructions: Array<{
     description: string
-    durationMinutes?: number
+    durationSec: number
   }>
   categories: string[]
 }
@@ -319,8 +343,7 @@ export interface RecipeFormData {
 export interface UserFormData {
   name: string
   email: string
-  bio?: string
-  avatar?: File | string
+  photoUrl: File | string
 }
 
 // =============================================================================
@@ -335,24 +358,21 @@ export interface RecipeCard {
   author: {
     id: string
     name: string
-    avatar?: string
+    photoUrl?: string
   }
   difficulty: Difficulty
-  totalMinutes: number
+  prepTime: number
   servings: number
-  rating: number
-  totalRatings: number
-  likes: number
+  averageRating: number
+  totalReviews: number
+  totalFavorites: number
   categories: string[]
-  createdAt: string
+  createdAt: Date
 }
 
 export interface CategoryCard {
   id: string
   name: string
-  icon?: string
-  color?: string
-  recipeCount: number
 }
 
 export interface ReviewCard {
@@ -360,13 +380,12 @@ export interface ReviewCard {
   user: {
     id: string
     name: string
-    avatar?: string
+    photoUrl?: string
   }
   rating: number
   comment?: string
-  helpfulCount: number
-  createdAt: string
-  isHelpful?: boolean
+  createdAt: Date
+  updatedAt: Date
 }
 
 // =============================================================================

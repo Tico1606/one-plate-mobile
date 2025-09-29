@@ -1,3 +1,4 @@
+// Token será obtido via hook useAuth quando necessário
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import axios, {
   type AxiosInstance,
@@ -19,6 +20,7 @@ const api: AxiosInstance = axios.create({
 api.interceptors.request.use(
   async (config) => {
     try {
+      // Por enquanto, usar token do AsyncStorage até configurar Clerk corretamente
       const token = await AsyncStorage.getItem('auth_token')
       if (token) {
         config.headers.Authorization = `Bearer ${token}`
@@ -84,11 +86,19 @@ export const get = async <T = any>(
     const response = await api.get<T>(url, config)
     return response.data
   } catch (error) {
-    console.error('❌ Erro na API GET:', {
-      url,
-      error: error.response?.data || error.message,
-      status: error.response?.status,
-    })
+    if (typeof error === 'object' && error !== null) {
+      const err = error as { response?: any; message?: string }
+      console.error('❌ Erro na API GET:', {
+        url,
+        error: err.response?.data || err.message,
+        status: err.response?.status,
+      })
+    } else {
+      console.error('❌ Erro na API GET:', {
+        url,
+        error,
+      })
+    }
     throw error
   }
 }

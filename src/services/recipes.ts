@@ -1,5 +1,11 @@
 import { API_CONFIG } from '@/constants/api'
-import type { ApiResponse, PaginatedResponse, Recipe, RecipeFilters } from '@/types/api'
+import type {
+  ApiResponse,
+  CreateRecipeRequest,
+  PaginatedResponse,
+  Recipe,
+  RecipeFilters,
+} from '@/types/api'
 import { del, get, post, put } from './api'
 
 export const recipesService = {
@@ -9,7 +15,7 @@ export const recipesService = {
 
     if (filters?.category) params.append('categoryId', filters.category.toString())
     if (filters?.difficulty) params.append('difficulty', filters.difficulty)
-    if (filters?.maxTime) params.append('maxTime', filters.maxTime.toString())
+    if (filters?.prepTime) params.append('prepTime', filters.prepTime.toString())
     if (filters?.minRating) params.append('minRating', filters.minRating.toString())
     if (filters?.search) params.append('search', filters.search)
     if (filters?.sortBy) params.append('sortBy', filters.sortBy)
@@ -84,19 +90,25 @@ export const recipesService = {
       // A API retorna a receita dentro de um objeto 'recipe'
       const rawRecipe = result.recipe || result
 
+      // Calcular averageRating baseado nas reviews se não vier da API
+      const calculateAverageRating = (reviews: any[]) => {
+        if (!reviews || reviews.length === 0) return 0
+        const sum = reviews.reduce((acc, review) => acc + (review.rating || 0), 0)
+        return sum / reviews.length
+      }
+
+      const calculatedAverageRating = calculateAverageRating(rawRecipe.reviews)
+
       // Mapear os dados da API para o formato esperado
       const mappedRecipe: Recipe = {
         id: rawRecipe.id,
         title: rawRecipe.title,
         description: rawRecipe.description,
+        authorId: rawRecipe.authorId,
         author: rawRecipe.author,
         difficulty: rawRecipe.difficulty,
-        prepMinutes: rawRecipe.prepMinutes,
-        cookMinutes: rawRecipe.cookMinutes,
-        totalMinutes: rawRecipe.prepMinutes + rawRecipe.cookMinutes,
+        prepTime: rawRecipe.prepTime,
         servings: rawRecipe.servings,
-        image: rawRecipe.photos?.[0] || 'https://via.placeholder.com/400x300',
-        images: rawRecipe.photos || [],
         videoUrl: rawRecipe.videoUrl,
         source: rawRecipe.source,
         calories: rawRecipe.calories,
@@ -107,36 +119,43 @@ export const recipesService = {
         publishedAt: rawRecipe.publishedAt,
         createdAt: rawRecipe.createdAt,
         updatedAt: rawRecipe.updatedAt,
-        rating: 0, // Valor padrão
-        totalRatings: 0, // Valor padrão
-        likes: rawRecipe._count?.favorites || 0,
-        views: rawRecipe._count?.views || 0,
-        isLiked: false, // Valor padrão
-        isViewed: false, // Valor padrão
+        averageRating:
+          rawRecipe.averageRating > 0 ? rawRecipe.averageRating : calculatedAverageRating,
+        totalReviews:
+          rawRecipe.totalReviews > 0
+            ? rawRecipe.totalReviews
+            : (rawRecipe.reviews?.length ?? 0),
+        totalFavorites: rawRecipe.totalFavorites ?? 0,
+        totalViews: rawRecipe.totalViews ?? 0,
+        image:
+          rawRecipe.image ||
+          rawRecipe.photos?.[0]?.url ||
+          'https://via.placeholder.com/400x300',
+        photos: rawRecipe.photos || [],
         ingredients:
           rawRecipe.ingredients?.map((ing: any) => ({
-            id: ing.ingredientId,
-            name: ing.ingredient?.name || 'Ingrediente',
+            id: ing.id,
+            name: ing.name,
             amount: ing.amount,
             unit: ing.unit,
             note: ing.note,
+            group: ing.group,
           })) || [],
         instructions:
-          rawRecipe.steps?.map((step: any) => ({
+          (rawRecipe.instructions || rawRecipe.steps)?.map((step: any) => ({
             id: step.id,
             order: step.order,
             description: step.description,
-            durationMinutes: Math.round(step.durationSec / 60),
+            durationSec: step.durationSec,
           })) || [],
         categories:
           rawRecipe.categories?.map((cat: any) => ({
-            id: cat.categoryId,
-            name: cat.category?.name || 'Categoria',
-            icon: cat.category?.icon,
-            color: cat.category?.color,
-            recipeCount: 0, // Valor padrão
+            id: cat.id,
+            name: cat.name,
           })) || [],
         reviews: rawRecipe.reviews || [],
+        favorites: rawRecipe.favorites || [],
+        views: rawRecipe.views || [],
       }
 
       return mappedRecipe
@@ -146,38 +165,35 @@ export const recipesService = {
         id: id.toString(),
         title: 'Pudim de Leite Condensado',
         description: 'Pudim cremoso e delicioso, perfeito para sobremesa',
+        authorId: '1',
         author: {
           id: '1',
           email: 'joao@email.com',
           name: 'João Silva',
-          avatar: 'https://via.placeholder.com/40',
+          photoUrl: 'https://via.placeholder.com/40',
           role: 'USER' as const,
-          createdAt: '2024-01-01T00:00:00Z',
-          updatedAt: '2024-01-01T00:00:00Z',
+          createdAt: new Date('2024-01-01T00:00:00Z'),
+          updatedAt: new Date('2024-01-01T00:00:00Z'),
         },
         difficulty: 'MEDIUM' as const,
-        prepMinutes: 15,
-        cookMinutes: 60,
-        totalMinutes: 75,
+        prepTime: 75,
         servings: 8,
         image: 'https://via.placeholder.com/400x300',
-        images: ['https://via.placeholder.com/400x300'],
         status: 'PUBLISHED' as const,
-        createdAt: '2024-01-15T10:00:00Z',
-        updatedAt: '2024-01-15T10:00:00Z',
-        rating: 4.5,
-        totalRatings: 23,
-        likes: 45,
-        views: 156,
-        isLiked: false,
-        isViewed: false,
+        publishedAt: new Date('2024-01-15T10:00:00Z'),
+        createdAt: new Date('2024-01-15T10:00:00Z'),
+        updatedAt: new Date('2024-01-15T10:00:00Z'),
+        averageRating: 4.5,
+        totalReviews: 23,
+        totalFavorites: 45,
+        totalViews: 156,
+        photos: [],
         ingredients: [
           {
             id: '1',
             name: 'Leite condensado',
             amount: 1,
             unit: 'lata',
-            note: '395g',
           },
           {
             id: '2',
@@ -196,7 +212,6 @@ export const recipesService = {
             name: 'Açúcar',
             amount: 1,
             unit: 'xícara',
-            note: 'Para a calda',
           },
         ],
         instructions: [
@@ -205,40 +220,37 @@ export const recipesService = {
             order: 1,
             description:
               'Em uma panela, derreta o açúcar até ficar dourado para fazer a calda',
-            durationMinutes: 10,
+            durationSec: 600,
           },
           {
             id: '2',
             order: 2,
             description: 'Despeje a calda em uma forma de pudim e reserve',
-            durationMinutes: 5,
+            durationSec: 300,
           },
           {
             id: '3',
             order: 3,
             description: 'No liquidificador, bata o leite condensado, leite e os ovos',
-            durationMinutes: 3,
+            durationSec: 180,
           },
           {
             id: '4',
             order: 4,
             description: 'Despeje a mistura na forma com calda',
-            durationMinutes: 2,
+            durationSec: 120,
           },
           {
             id: '5',
             order: 5,
             description: 'Leve ao forno em banho-maria por 1 hora',
-            durationMinutes: 60,
+            durationSec: 3600,
           },
         ],
         categories: [
           {
             id: '1',
             name: 'Sobremesas',
-            icon: 'ice-cream',
-            color: 'bg-pink-500',
-            recipeCount: 5,
           },
         ],
         reviews: [
@@ -248,16 +260,15 @@ export const recipesService = {
               id: '2',
               email: 'maria@email.com',
               name: 'Maria Santos',
-              avatar: 'https://via.placeholder.com/32',
+              photoUrl: 'https://via.placeholder.com/32',
               role: 'USER' as const,
-              createdAt: '2024-01-01T00:00:00Z',
-              updatedAt: '2024-01-01T00:00:00Z',
+              createdAt: new Date('2024-01-01T00:00:00Z'),
+              updatedAt: new Date('2024-01-01T00:00:00Z'),
             },
             rating: 5,
             comment: 'Ficou perfeito! Muito cremoso e saboroso.',
-            helpfulCount: 8,
-            createdAt: '2024-01-20T14:30:00Z',
-            isHelpful: false,
+            createdAt: new Date('2024-01-20T14:30:00Z'),
+            updatedAt: new Date('2024-01-20T14:30:00Z'),
           },
           {
             id: '2',
@@ -265,27 +276,26 @@ export const recipesService = {
               id: '3',
               email: 'pedro@email.com',
               name: 'Pedro Oliveira',
-              avatar: 'https://via.placeholder.com/32',
+              photoUrl: 'https://via.placeholder.com/32',
               role: 'USER' as const,
-              createdAt: '2024-01-01T00:00:00Z',
-              updatedAt: '2024-01-01T00:00:00Z',
+              createdAt: new Date('2024-01-01T00:00:00Z'),
+              updatedAt: new Date('2024-01-01T00:00:00Z'),
             },
             rating: 4,
             comment: 'Receita fácil e deliciosa. Recomendo!',
-            helpfulCount: 5,
-            createdAt: '2024-01-18T09:15:00Z',
-            isHelpful: true,
+            createdAt: new Date('2024-01-18T09:15:00Z'),
+            updatedAt: new Date('2024-01-18T09:15:00Z'),
           },
         ],
+        favorites: [],
+        views: [],
       }
     }
   },
 
   // Criar nova receita
-  create: async (
-    recipe: Omit<Recipe, 'id' | 'createdAt' | 'updatedAt' | 'author' | 'authorId'>,
-  ): Promise<Recipe> => {
-    return post<Recipe>(API_CONFIG.ENDPOINTS.RECIPES.CREATE, recipe)
+  create: async (recipe: CreateRecipeRequest): Promise<{ recipe: Recipe }> => {
+    return post<{ recipe: Recipe }>(API_CONFIG.ENDPOINTS.RECIPES.CREATE, recipe)
   },
 
   // Atualizar receita
