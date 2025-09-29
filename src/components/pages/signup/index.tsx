@@ -7,5 +7,7 @@ export function SignUpPage() {
   return <SignUpView {...signUpPageData} />
 }
 
+export { SignUpForm } from './SignUpForm'
 export { SignUpView } from './SignUpView'
 export { useSignUpPage } from './useSignUpPage'
+export { VerifyCodeForm } from './VerifyCodeForm'
