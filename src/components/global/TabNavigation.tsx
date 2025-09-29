@@ -8,7 +8,7 @@ export default function TabNavigation() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#3B82F6',
+        tabBarActiveTintColor: '#8B5CF6',
         tabBarInactiveTintColor: '#9CA3AF',
         tabBarStyle: {
           backgroundColor: '#FFFFFF',
@@ -55,12 +55,20 @@ export default function TabNavigation() {
         }}
       />
       <Tabs.Screen
-        name='add'
+        name='create'
         options={{
           title: '',
-          tabBarIcon: ({ size }) => (
-            <Box className='bg-purple-400 rounded-full w-12 h-12 flex items-center justify-center shadow-sm'>
-              <Ionicons name='add' size={size + 4} color='#FFFFFF' />
+          tabBarIcon: ({ size, focused }) => (
+            <Box
+              className={`rounded-full w-12 h-12 flex items-center justify-center shadow-sm ${
+                focused ? 'bg-purple-600' : 'bg-purple-400'
+              }`}
+            >
+              <Ionicons
+                name={focused ? 'add' : 'add-outline'}
+                size={size + 4}
+                color='#FFFFFF'
+              />
             </Box>
           ),
           tabBarLabel: () => null,
