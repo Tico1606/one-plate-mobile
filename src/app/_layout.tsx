@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 import { Box } from '@/components/ui/box'
 import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider'
 import { Text } from '@/components/ui/text'
+import { useAuthToken } from '@/hooks/useAuthToken'
 import { ClerkProvider, clerkConfig } from '@/lib/clerk'
 import '@/styles/global.css'
 
@@ -18,6 +19,16 @@ const InitialLayout = () => {
   const { isLoaded, isSignedIn } = useAuth()
   const segments = useSegments()
   const router = useRouter()
+
+  // Verificação do status de autenticação
+  useEffect(() => {
+    if (isLoaded) {
+      // Status de autenticação verificado
+    }
+  }, [isLoaded])
+
+  // Sincronizar token do Clerk com AsyncStorage
+  useAuthToken()
 
   useEffect(() => {
     if (!isLoaded) return
@@ -39,7 +50,7 @@ const InitialLayout = () => {
 
   if (!isLoaded) {
     return (
-      <Box className='flex-1 bg-white justify-center items-center'>
+      <Box className='flex-1 bg-zinc-50 justify-center items-center'>
         <Text className='text-lg'>Carregando...</Text>
       </Box>
     )
@@ -65,13 +76,15 @@ export default function RootLayout() {
   }, [loaded])
 
   return (
-    <GluestackUIProvider mode={colorMode}>
-      <ClerkProvider
-        publishableKey={clerkConfig?.publishableKey}
-        tokenCache={clerkConfig.tokenCache}
-      >
-        <InitialLayout />
-      </ClerkProvider>
-    </GluestackUIProvider>
+    <Box className='flex-1 bg-zinc-50'>
+      <GluestackUIProvider mode={colorMode}>
+        <ClerkProvider
+          publishableKey={clerkConfig?.publishableKey}
+          tokenCache={clerkConfig.tokenCache}
+        >
+          <InitialLayout />
+        </ClerkProvider>
+      </GluestackUIProvider>
+    </Box>
   )
 }

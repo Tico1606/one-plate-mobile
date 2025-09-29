@@ -1,9 +1,11 @@
 import { ActivityIndicator, View } from 'react-native'
+import { Text } from '@/components/ui/text'
 
 export default function Index() {
   return (
-    <View className='flex-1 items-center justify-center'>
-      <ActivityIndicator size='large' color='#121212' />
+    <View className='flex-1 bg-zinc-50 justify-center items-center'>
+      <ActivityIndicator size='large' color='#8B5CF6' />
+      <Text className='mt-4 text-gray-600'>Carregando...</Text>
     </View>
   )
 }
