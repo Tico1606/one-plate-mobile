@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons'
 import { Image, ScrollView, TouchableOpacity } from 'react-native'
 
+import { Header } from '@/components/global/Header'
 import { Box } from '@/components/ui/box'
 import { Button, ButtonText } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -33,35 +34,44 @@ interface ProfileViewProps {
   user: User | null | undefined
   profileStats: ProfileStat[]
   menuItems: MenuItem[]
+  isLoading?: boolean
 
   // Handlers
   handleSignOut: () => void
   handleSettingsPress: () => void
   handleMenuItemPress: (item: MenuItem) => void
+  handleNotificationPress?: () => void
 }
 
 export function ProfileView({
   user,
   profileStats,
   menuItems,
+  isLoading = false,
   handleSignOut,
   handleSettingsPress,
   handleMenuItemPress,
+  handleNotificationPress = () => {
+    // TODO: Implementar notificações
+  },
 }: ProfileViewProps) {
   return (
-    <Box className='flex-1 bg-gray-50'>
+    <Box className='flex-1 bg-zinc-100'>
+      {/* Header */}
+      <Header isLoading={isLoading} onNotificationPress={handleNotificationPress} />
+
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <Box className='bg-white px-6 py-8'>
+        {/* Profile Header */}
+        <Box className='bg-white px-6 py-8 mx-4 rounded-lg'>
           <HStack className='justify-between items-center mb-6'>
             <Text className='text-2xl font-bold text-gray-900'>Perfil</Text>
             <TouchableOpacity onPress={handleSettingsPress}>
-              <Ionicons name='settings' size={24} color='#374151' />
+              <Ionicons name='create' size={24} color='#374151' />
             </TouchableOpacity>
           </HStack>
 
           {/* Profile Info */}
-          <HStack className='items-center space-x-4 mb-6'>
+          <HStack className='items-center space-x-4 mb-8 gap-4'>
             <Box className='w-20 h-20 bg-purple-500 rounded-full items-center justify-center'>
               {user?.imageUrl ? (
                 <Image
@@ -88,7 +98,7 @@ export function ProfileView({
           <HStack className='justify-between'>
             {profileStats.map((stat) => (
               <VStack key={stat.label} className='items-center space-y-1'>
-                <Box className='w-12 h-12 bg-gray-100 rounded-full items-center justify-center'>
+                <Box className='w-12 h-12 mb-1 bg-gray-100 rounded-full items-center justify-center'>
                   <Ionicons name={stat.icon as any} size={20} color='#6B7280' />
                 </Box>
                 <Text className='text-lg font-bold text-gray-900'>{stat.value}</Text>
@@ -99,11 +109,11 @@ export function ProfileView({
         </Box>
 
         {/* Menu Items */}
-        <VStack className='px-6 py-4 space-y-2'>
+        <VStack className='px-6 py-4 space-y-2 '>
           {menuItems.map((item) => (
             <TouchableOpacity key={item.id} onPress={() => handleMenuItemPress(item)}>
               <Card className='p-4'>
-                <HStack className='items-center space-x-4'>
+                <HStack className='items-center space-x-4 gap-2'>
                   <Box
                     className='w-10 h-10 rounded-full items-center justify-center'
                     style={{ backgroundColor: `${item.color}20` }}

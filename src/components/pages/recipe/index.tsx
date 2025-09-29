@@ -13,7 +13,7 @@ export function RecipeDetailPage() {
 
   if (error) {
     return (
-      <View className='flex-1 bg-white justify-center items-center px-6'>
+      <View className='flex-1 bg-zinc-50 justify-center items-center px-6'>
         <Ionicons name='alert-circle' size={48} color='#EF4444' />
         <Text className='mt-4 text-lg font-semibold text-gray-900 text-center'>
           Erro ao carregar receita
@@ -33,7 +33,7 @@ export function RecipeDetailPage() {
 
   if (!isLoading && !recipe) {
     return (
-      <View className='flex-1 bg-white justify-center items-center px-6'>
+      <View className='flex-1 bg-zinc-50 justify-center items-center px-6'>
         <Ionicons name='restaurant-outline' size={48} color='#9CA3AF' />
         <Text className='mt-4 text-lg font-semibold text-gray-900 text-center'>
           Receita não encontrada

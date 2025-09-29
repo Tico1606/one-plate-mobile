@@ -21,17 +21,17 @@ export function RecipeDetailView({
 }: RecipeDetailViewProps) {
   if (isLoading) {
     return (
-      <View className='flex-1 bg-white justify-center items-center'>
+      <View className='flex-1 justify-center items-center'>
         <Text className='text-gray-600'>Carregando receita...</Text>
       </View>
     )
   }
 
   return (
-    <View className='flex-1 bg-white'>
+    <View className='flex-1'>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <View className='relative'>
+        <View className='relative border-b border-gray-200'>
           <Image
             source={{ uri: recipe.image }}
             className='w-full h-64'
@@ -47,11 +47,7 @@ export function RecipeDetailView({
             onPress={onLike}
             className='absolute top-12 right-4 w-10 h-10 bg-black/50 rounded-full items-center justify-center'
           >
-            <Ionicons
-              name={recipe.isLiked ? 'heart' : 'heart-outline'}
-              size={24}
-              color={recipe.isLiked ? '#EF4444' : 'white'}
-            />
+            <Ionicons name='heart-outline' size={24} color='white' />
           </TouchableOpacity>
         </View>
 
@@ -68,11 +64,13 @@ export function RecipeDetailView({
           </View>
 
           {/* Autor e rating */}
-          <View className='flex-row items-center justify-between'>
-            <View className='flex-row items-center space-x-3'>
+          <View className='flex-row items-center justify-between px-2 pt-3'>
+            <View className='flex-row items-center space-x-3 gap-3'>
               <Image
-                source={{ uri: recipe.author.avatar || 'https://via.placeholder.com/40' }}
-                className='w-10 h-10 rounded-full'
+                source={{
+                  uri: recipe.author.photoUrl || 'https://via.placeholder.com/40',
+                }}
+                className='w-10 h-10 rounded-full border border-gray-400'
               />
               <View>
                 <Text className='font-semibold text-gray-900'>
@@ -88,27 +86,20 @@ export function RecipeDetailView({
             <View className='flex-row items-center space-x-1'>
               <Ionicons name='star' size={16} color='#F59E0B' />
               <Text className='font-semibold text-gray-900'>
-                {recipe.rating ? recipe.rating.toFixed(1) : '0.0'}
+                {recipe.averageRating ? recipe.averageRating.toFixed(1) : '0.0'}
               </Text>
-              <Text className='text-sm text-gray-500'>({recipe.totalRatings || 0})</Text>
+              <Text className='text-sm text-gray-500'>({recipe.totalReviews || 0})</Text>
             </View>
           </View>
 
           {/* Estatísticas */}
-          <View className='flex-row justify-between py-4'>
+          <View className='flex-row justify-between px-1 py-4'>
             <View className='items-center'>
               <Ionicons name='time' size={24} color='#6B7280' />
               <Text className='text-sm font-semibold text-gray-900'>
-                {recipe.prepMinutes || 0}min
+                {recipe.prepTime || 0}min
               </Text>
               <Text className='text-xs text-gray-500'>Preparo</Text>
-            </View>
-            <View className='items-center'>
-              <Ionicons name='timer' size={24} color='#6B7280' />
-              <Text className='text-sm font-semibold text-gray-900'>
-                {recipe.cookMinutes || 0}min
-              </Text>
-              <Text className='text-xs text-gray-500'>Cozimento</Text>
             </View>
             <View className='items-center'>
               <Ionicons name='people' size={24} color='#6B7280' />
@@ -120,37 +111,42 @@ export function RecipeDetailView({
             <View className='items-center'>
               <Ionicons name='heart' size={24} color='#EF4444' />
               <Text className='text-sm font-semibold text-gray-900'>
-                {recipe.likes || 0}
+                {recipe.totalFavorites || 0}
               </Text>
-              <Text className='text-xs text-gray-500'>Curtidas</Text>
+              <Text className='text-xs text-gray-500'>Favoritos</Text>
+            </View>
+            <View className='items-center'>
+              <Ionicons name='extension-puzzle' size={24} color='#6B7280' />
+              <Text className='text-sm font-semibold text-gray-900'>
+                {recipe.difficulty || 'Dificuldade não disponível'}
+              </Text>
+              <Text className='text-xs text-gray-500'>Dificuldade</Text>
             </View>
           </View>
 
           {/* Ingredientes */}
-          <View className='bg-white rounded-lg p-4 shadow-sm'>
+          <View className='bg-white rounded-t-lg p-4 shadow-sm'>
             <Text className='text-lg font-bold text-gray-900 mb-3'>Ingredientes</Text>
-            {recipe.ingredients.map((ingredient) => (
-              <View key={ingredient.id} className='flex-row items-center space-x-3 mb-2'>
+            {recipe.ingredients?.map((ingredient) => (
+              <View
+                key={ingredient.id}
+                className='flex-row items-center space-x-3 mb-2 gap-2'
+              >
                 <View className='w-2 h-2 bg-purple-500 rounded-full' />
                 <Text>
                   {ingredient.amount && ingredient.unit
                     ? `${ingredient.amount} ${ingredient.unit} de ${ingredient.name ?? 'Ingrediente'}`
                     : (ingredient.name ?? 'Ingrediente')}
                 </Text>
-                {ingredient.note && (
-                  <Text className='text-sm text-gray-500 italic'>
-                    ({ingredient.note})
-                  </Text>
-                )}
               </View>
-            ))}
+            )) || []}
           </View>
 
           {/* Instruções */}
-          <View className='bg-white rounded-lg p-4 shadow-sm'>
+          <View className='bg-white p-4 shadow-sm gap-1'>
             <Text className='text-lg font-bold text-gray-900 mb-3'>Modo de Preparo</Text>
-            {recipe.instructions.map((instruction, index) => (
-              <View key={instruction.id} className='flex-row space-x-4 mb-3'>
+            {recipe.instructions?.map((instruction, index) => (
+              <View key={instruction.id} className='flex-row space-x-4 mb-3 gap-2'>
                 <View className='w-8 h-8 bg-purple-500 rounded-full items-center justify-center'>
                   <Text className='text-white font-bold text-sm'>{index + 1}</Text>
                 </View>
@@ -158,15 +154,15 @@ export function RecipeDetailView({
                   <Text className='text-gray-700'>
                     {String(instruction.description || 'Instrução não disponível')}
                   </Text>
-                  {instruction.durationMinutes !== undefined &&
-                    instruction.durationMinutes !== null && (
+                  {instruction.durationSec !== undefined &&
+                    instruction.durationSec !== null && (
                       <Text className='text-sm text-gray-500'>
-                        Tempo: {instruction.durationMinutes} minutos
+                        Tempo: {Math.round(instruction.durationSec / 60)} minutos
                       </Text>
                     )}
                 </View>
               </View>
-            ))}
+            )) || []}
           </View>
 
           {/* Nutrição */}
@@ -174,7 +170,7 @@ export function RecipeDetailView({
             recipe.proteinGrams ||
             recipe.carbGrams ||
             recipe.fatGrams) && (
-            <View className='bg-white rounded-lg p-4 shadow-sm'>
+            <View className='bg-white p-4 shadow-sm'>
               <Text className='text-lg font-bold text-gray-900 mb-3'>
                 Informações Nutricionais
               </Text>
@@ -216,17 +212,17 @@ export function RecipeDetailView({
           )}
 
           {/* Avaliações */}
-          <View className='bg-white rounded-lg p-4 shadow-sm'>
+          <View className='bg-white rounded-b-lg p-4 pt-6 mb-6 border-t border-gray-200'>
             <View className='flex-row justify-between items-center mb-4'>
               <Text className='text-lg font-bold text-gray-900'>
-                Avaliações ({recipe.reviews.length})
+                Avaliações ({recipe.reviews?.length || 0})
               </Text>
               <TouchableOpacity className='bg-purple-500 px-4 py-2 rounded-lg'>
                 <Text className='text-white font-semibold'>Avaliar</Text>
               </TouchableOpacity>
             </View>
 
-            {recipe.reviews.length === 0 ? (
+            {!recipe.reviews || recipe.reviews.length === 0 ? (
               <View className='py-8 items-center'>
                 <Ionicons name='chatbubble-outline' size={48} color='#9CA3AF' />
                 <Text className='mt-2 text-gray-500 text-center'>
@@ -239,13 +235,13 @@ export function RecipeDetailView({
             ) : (
               recipe.reviews.map((review) => (
                 <View key={review.id} className='border-b border-gray-200 pb-4 mb-4'>
-                  <View className='flex-row justify-between items-start mb-2'>
-                    <View className='flex-row items-center space-x-3'>
+                  <View className='flex-row justify-between items-start mb-4 gap-4'>
+                    <View className='flex-row items-center space-x-3 gap-2'>
                       <Image
                         source={{
-                          uri: review.user.avatar || 'https://via.placeholder.com/32',
+                          uri: review.user.photoUrl || 'https://via.placeholder.com/32',
                         }}
-                        className='w-8 h-8 rounded-full'
+                        className='w-8 h-8 rounded-full border border-gray-400'
                       />
                       <View>
                         <Text className='font-semibold text-gray-900'>
@@ -263,7 +259,7 @@ export function RecipeDetailView({
                         </View>
                       </View>
                     </View>
-                    <Text className='text-sm text-gray-500'>
+                    <Text className='text-sm text-gray-500 px-2'>
                       {new Date(review.createdAt).toLocaleDateString('pt-BR')}
                     </Text>
                   </View>
@@ -272,16 +268,10 @@ export function RecipeDetailView({
                   )}
                   <TouchableOpacity
                     onPress={() => onToggleHelpful(review.id)}
-                    className='flex-row items-center space-x-1'
+                    className='flex-row items-center space-x-1 pt-2 pl-1 gap-1'
                   >
-                    <Ionicons
-                      name={review.isHelpful ? 'thumbs-up' : 'thumbs-up-outline'}
-                      size={16}
-                      color={review.isHelpful ? '#10B981' : '#6B7280'}
-                    />
-                    <Text className='text-sm text-gray-600'>
-                      Útil ({review.helpfulCount})
-                    </Text>
+                    <Ionicons name='thumbs-up-outline' size={16} color='#6B7280' />
+                    <Text className='text-sm text-gray-600'>Útil</Text>
                   </TouchableOpacity>
                 </View>
               ))
