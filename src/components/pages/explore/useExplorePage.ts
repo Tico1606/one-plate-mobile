@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useRecipeFavorites, useRecipes } from '@/hooks'
+import { useFavorites } from '@/contexts'
+import { useRecipes } from '@/hooks'
 import { useCategories } from '@/hooks/useCategories'
 import type { Category, Recipe, RecipeFilters } from '@/types/api'
 
@@ -18,7 +19,8 @@ export function useExplorePage() {
 
   // Estados locais
   const [searchQuery, setSearchQuery] = useState('')
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
+  const [selectedCategories, setSelectedCategories] = useState<Category[]>([])
   const [currentPage, setCurrentPage] = useState(1)
   const [sortBy, setSortBy] = useState<SortOption>('createdAt')
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc')
@@ -32,7 +34,15 @@ export function useExplorePage() {
     refetch: refetchCategories,
   } = useCategories()
 
-  // Hook para busca com debounce (removido - usando filtros diretos)
+  // Função para remover acentos da string
+  const removeAccents = useCallback((str: string): string => {
+    return str
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+  }, [])
+
+  // Removido debounce automático - busca apenas quando usuário pressiona Enter ou clica na lupa
 
   // Construir filtros para a API com useMemo para evitar re-renders
   const filters = useMemo((): RecipeFilters => {
@@ -43,16 +53,18 @@ export function useExplorePage() {
       sortOrder: sortDirection,
     }
 
-    if (selectedCategory) {
-      baseFilters.category = selectedCategory.id
+    // Se há categorias selecionadas, filtrar por elas
+    if (selectedCategories.length > 0) {
+      // Usar o novo formato de múltiplas categorias
+      baseFilters.categories = selectedCategories.map((cat) => cat.id)
     }
 
-    if (searchQuery.trim()) {
-      baseFilters.search = searchQuery
+    if (debouncedSearchQuery.trim()) {
+      baseFilters.search = debouncedSearchQuery
     }
 
     return baseFilters
-  }, [currentPage, sortBy, sortDirection, selectedCategory, searchQuery])
+  }, [currentPage, sortBy, sortDirection, selectedCategories, debouncedSearchQuery])
 
   // Hook para buscar receitas com paginação
   const {
@@ -67,7 +79,7 @@ export function useExplorePage() {
     toggleFavorite,
     favoriteRecipes,
     loading: favoritesLoading,
-  } = useRecipeFavorites()
+  } = useFavorites()
 
   // Extrair dados das receitas
   const recipes = recipesData?.data || []
@@ -80,11 +92,21 @@ export function useExplorePage() {
     }
   }, [pagination])
 
-  // Usar dados da API com verificação de segurança
-  const browseCategories = Array.isArray(categories) ? categories : []
+  // Usar dados da API com verificação de segurança e ordenar categorias
+  const browseCategories = useMemo(() => {
+    const allCategories = Array.isArray(categories) ? categories : []
 
-  // Estados de loading
-  const isLoading = categoriesLoading || recipesLoading
+    // Ordenar categorias: selecionadas primeiro, depois as não selecionadas
+    const selectedIds = selectedCategories.map((cat) => cat.id)
+    const selected = allCategories.filter((cat) => selectedIds.includes(cat.id))
+    const unselected = allCategories.filter((cat) => !selectedIds.includes(cat.id))
+
+    return [...selected, ...unselected]
+  }, [categories, selectedCategories])
+
+  // Estados de loading separados para evitar recarregar a tela inteira
+  const isInitialLoading = categoriesLoading && !categories // Só loading inicial quando não há categorias
+  const isRecipesLoading = recipesLoading // Loading específico das receitas
   const isLoadingMore = false // Não usamos mais paginação infinita
 
   // Função para tentar novamente
@@ -95,8 +117,11 @@ export function useExplorePage() {
 
   // Handlers para eventos
   const handleSearchPress = useCallback(() => {
-    // TODO: Implementar navegação para tela de busca
-  }, [])
+    // Força a busca imediata quando o usuário clica no botão de pesquisar
+    const normalizedQuery = removeAccents(searchQuery)
+    setDebouncedSearchQuery(normalizedQuery)
+    setCurrentPage(1) // Resetar para primeira página
+  }, [searchQuery, removeAccents])
 
   const handleFilterPress = useCallback(() => {
     // TODO: Implementar filtros
@@ -107,7 +132,18 @@ export function useExplorePage() {
   }, [])
 
   const handleCategoryPress = useCallback((category: Category) => {
-    setSelectedCategory(category)
+    setSelectedCategories((prev) => {
+      const isSelected = prev.some((cat) => cat.id === category.id)
+
+      if (isSelected) {
+        // Se já está selecionada, remover
+        return prev.filter((cat) => cat.id !== category.id)
+      } else {
+        // Se não está selecionada, adicionar
+        return [...prev, category]
+      }
+    })
+
     setSearchQuery('') // Limpar busca quando selecionar categoria
     setCurrentPage(1) // Resetar para primeira página
   }, [])
@@ -133,14 +169,21 @@ export function useExplorePage() {
   const handleSearchChange = useCallback((query: string) => {
     setSearchQuery(query)
     if (query.trim()) {
-      setSelectedCategory(null) // Limpar categoria quando buscar
+      setSelectedCategories([]) // Limpar categorias quando buscar
     }
+    setCurrentPage(1) // Resetar para primeira página
+  }, [])
+
+  // Handler para busca automática (chamado pelo debounce)
+  const handleAutoSearch = useCallback((query: string) => {
+    setDebouncedSearchQuery(query)
     setCurrentPage(1) // Resetar para primeira página
   }, [])
 
   const handleClearFilters = useCallback(() => {
     setSearchQuery('')
-    setSelectedCategory(null)
+    setDebouncedSearchQuery('')
+    setSelectedCategories([])
     setCurrentPage(1)
   }, [])
 
@@ -186,7 +229,7 @@ export function useExplorePage() {
     popularRecipes: [],
     favoriteRecipes: Array.isArray(favoriteRecipes) ? favoriteRecipes : [],
     searchQuery,
-    selectedCategory,
+    selectedCategories,
     sortBy,
     sortDirection,
     currentPage,
@@ -194,7 +237,8 @@ export function useExplorePage() {
     isDropdownOpen,
 
     // Estados de loading
-    isLoading,
+    isInitialLoading,
+    isRecipesLoading,
     isLoadingMore,
     favoritesLoading,
 
@@ -212,6 +256,7 @@ export function useExplorePage() {
     onViewAllRecipes: handleViewAllRecipes,
     onRecipeLike: handleRecipeLike,
     onSearchChange: handleSearchChange,
+    onAutoSearch: handleAutoSearch,
     onClearFilters: handleClearFilters,
     onNextPage: handleNextPage,
     onPrevPage: handlePrevPage,

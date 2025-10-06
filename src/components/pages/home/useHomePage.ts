@@ -1,11 +1,7 @@
 import { useRouter } from 'expo-router'
 import { useCallback, useState } from 'react'
-import {
-  useInfiniteRecipes,
-  useRecentRecipes,
-  useRecipeFavorites,
-  useRecipeSearch,
-} from '@/hooks'
+import { useFavorites } from '@/contexts'
+import { useInfiniteRecipes, useRecentRecipes, useRecipeSearch } from '@/hooks'
 import { useCategories } from '@/hooks/useCategories'
 import type { Category, Recipe } from '@/types/api'
 
@@ -36,7 +32,10 @@ export function useHomePage() {
   // } = usePopularRecipes(5)
 
   // Hook para busca com debounce
-  const { data: searchResults, loading: searchLoading } = useRecipeSearch(searchQuery)
+  const { data: searchResults, loading: searchLoading } = useRecipeSearch(
+    searchQuery,
+    800,
+  )
 
   // Hook para paginação infinita (usado quando há filtros)
   const {
@@ -52,7 +51,7 @@ export function useHomePage() {
     toggleFavorite,
     favoriteRecipes,
     loading: favoritesLoading,
-  } = useRecipeFavorites()
+  } = useFavorites()
 
   // Determinar quais receitas mostrar
   const getDisplayRecipes = () => {
@@ -125,6 +124,14 @@ export function useHomePage() {
     }
   }, [])
 
+  // Handler para busca automática (chamado pelo debounce)
+  const handleAutoSearch = useCallback((query: string) => {
+    setSearchQuery(query)
+    if (query.trim()) {
+      setSelectedCategory(null) // Limpar categoria quando buscar
+    }
+  }, [])
+
   const handleClearFilters = useCallback(() => {
     setSearchQuery('')
     setSelectedCategory(null)
@@ -168,6 +175,7 @@ export function useHomePage() {
     onViewAllRecipes: handleViewAllRecipes,
     onRecipeLike: handleRecipeLike,
     onSearchChange: handleSearchChange,
+    onAutoSearch: handleAutoSearch,
     onClearFilters: handleClearFilters,
     onLoadMore: handleLoadMore,
     onDebugPress: handleDebugPress,

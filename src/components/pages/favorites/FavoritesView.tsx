@@ -13,50 +13,64 @@ import { Card } from '@/components/ui/card'
 import { HStack } from '@/components/ui/hstack'
 import { Text } from '@/components/ui/text'
 import { VStack } from '@/components/ui/vstack'
-import type { Category, Recipe } from '@/types/api'
+import type { Recipe } from '@/types/api'
+import type { SortDirection, SortOption } from './useFavoritesPage'
 
-interface HomeViewProps {
+// Constante para opções de ordenação
+const SORT_OPTIONS = [
+  { value: 'createdAt' as SortOption, label: 'Data de Criação' },
+  { value: 'averageRating' as SortOption, label: 'Avaliação' },
+  { value: 'difficulty' as SortOption, label: 'Dificuldade' },
+  { value: 'prepTime' as SortOption, label: 'Tempo de Preparo' },
+  { value: 'servings' as SortOption, label: 'Quantidade de Porções' },
+] as const
+
+interface FavoritesViewProps {
   // Dados
-  browseCategories: Category[]
   recipes: Recipe[]
-  isLoading: boolean
   searchQuery?: string
+  sortBy: SortOption
+  sortDirection: SortDirection
+  isDropdownOpen: boolean
+
+  // Estados
+  isLoading: boolean
 
   // Handlers
   onRetry: () => void
   onSearchPress: () => void
   onNotificationPress: () => void
-  onCategoryPress: (category: Category) => void
   onRecipePress: (recipe: Recipe) => void
-  onViewAllRecipes: () => void
-  onRecipeLike: (recipe: Recipe) => void
   onSearchChange?: (query: string) => void
   onAutoSearch?: (query: string) => void
-  isFavorite: (recipeId: string) => boolean
+  onSortChange: (option: SortOption) => void
+  onSortDirectionToggle: () => void
+  onDropdownToggle: () => void
 }
 
-export function HomeView({
-  browseCategories,
+export function FavoritesView({
   recipes,
-  isLoading,
   searchQuery,
+  sortBy,
+  sortDirection,
+  isDropdownOpen,
+  isLoading,
   onRetry,
   onSearchPress,
   onNotificationPress,
-  onCategoryPress,
   onRecipePress,
-  onViewAllRecipes,
-  onRecipeLike,
   onSearchChange,
   onAutoSearch,
-  isFavorite,
-}: HomeViewProps) {
+  onSortChange,
+  onSortDirectionToggle,
+  onDropdownToggle,
+}: FavoritesViewProps) {
   // Loading state
   if (isLoading) {
     return (
       <Box className='flex-1 bg-zinc-100 justify-center items-center'>
         <ActivityIndicator size='large' color='#8B5CF6' />
-        <Text className='mt-4 text-gray-600'>Carregando...</Text>
+        <Text className='mt-4 text-gray-600'>Carregando favoritos...</Text>
       </Box>
     )
   }
@@ -79,7 +93,7 @@ export function HomeView({
 
         {/* Search Bar */}
         <SearchBar
-          placeholder='Buscar receitas por nome, ingredientes...'
+          placeholder='Buscar receitas favoritas por nome, ingredientes...'
           value={searchQuery}
           onChangeText={onSearchChange || (() => {})}
           onSearchPress={onSearchPress}
@@ -87,48 +101,92 @@ export function HomeView({
           debounceMs={800}
         />
 
-        {/* Browse by Category */}
-        <VStack className='px-6 mb-4'>
-          <Text className='text-xl font-bold text-gray-900 mb-4'>
-            Navegar por Categoria
-          </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <HStack className='space-x-4 pt-4 gap-6'>
-              {browseCategories.map((category) => (
-                <TouchableOpacity
-                  key={category.id}
-                  className='items-center min-w-[100px]'
-                  onPress={() => onCategoryPress(category)}
-                >
-                  <Box className='w-24 h-16 bg-white-100 rounded-lg items-center justify-center mb-2 border-2 border-purple-400'>
-                    <Text className='text-sm font-semibold text-center px-2 text-purple-500'>
-                      {category.name}
-                    </Text>
-                  </Box>
-                </TouchableOpacity>
-              ))}
-            </HStack>
-          </ScrollView>
-        </VStack>
-
-        {/* Recent Recipes */}
+        {/* Favorites List */}
         <VStack className='px-6 my-4'>
           <HStack className='justify-between items-center mb-4'>
-            <Text className='text-xl font-bold text-gray-900'>Receitas Recentes</Text>
-            <TouchableOpacity onPress={onViewAllRecipes}>
-              <Text className='text-purple-500 font-bold px-2'>Ver Todas</Text>
-            </TouchableOpacity>
+            <Text className='text-xl font-bold text-gray-900'>Receitas Favoritas</Text>
+
+            {/* Sort Selector */}
+            <HStack className='items-center space-x-2 gap-4'>
+              <Box className='relative'>
+                <HStack className='items-center space-x-2 gap-2'>
+                  {/* Botão de direção da ordenação */}
+                  <TouchableOpacity
+                    className='w-8 h-8 bg-white rounded-lg items-center justify-center border border-gray-200'
+                    onPress={onSortDirectionToggle}
+                  >
+                    <Ionicons
+                      name={sortDirection === 'asc' ? 'arrow-up' : 'arrow-down'}
+                      size={16}
+                      color='#6B7280'
+                    />
+                  </TouchableOpacity>
+
+                  {/* Botão de seleção de ordenação */}
+                  <TouchableOpacity
+                    className='flex-row items-center space-x-1 px-3 py-2 bg-white rounded-lg gap-1'
+                    onPress={onDropdownToggle}
+                  >
+                    <Text className='text-sm font-medium text-gray-700'>
+                      {SORT_OPTIONS.find((option) => option.value === sortBy)?.label ||
+                        'Data de Criação'}
+                    </Text>
+                    <Ionicons
+                      name={isDropdownOpen ? 'chevron-up' : 'chevron-down'}
+                      size={16}
+                      color='#6B7280'
+                    />
+                  </TouchableOpacity>
+                </HStack>
+
+                {/* Dropdown - Posicionado abaixo do seletor */}
+                {isDropdownOpen && (
+                  <Box className='absolute top-full left-0 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 min-w-[180px] z-50'>
+                    <VStack className='py-2'>
+                      {SORT_OPTIONS.map((option) => (
+                        <TouchableOpacity
+                          key={option.value}
+                          className={`px-4 py-3 ${
+                            sortBy === option.value ? 'bg-purple-50' : ''
+                          }`}
+                          onPress={() => onSortChange(option.value)}
+                        >
+                          <HStack className='items-center justify-between'>
+                            <Text
+                              className={`text-sm ${
+                                sortBy === option.value
+                                  ? 'text-purple-600 font-medium'
+                                  : 'text-gray-700'
+                              }`}
+                            >
+                              {option.label}
+                            </Text>
+                            {sortBy === option.value && (
+                              <Ionicons name='checkmark' size={16} color='#8B5CF6' />
+                            )}
+                          </HStack>
+                        </TouchableOpacity>
+                      ))}
+                    </VStack>
+                  </Box>
+                )}
+              </Box>
+            </HStack>
           </HStack>
 
           <VStack className='space-y-5 py-2 gap-4'>
             {recipes.length === 0 ? (
               <Box className='items-center py-8'>
-                <Ionicons name='restaurant-outline' size={48} color='#9CA3AF' />
+                <Ionicons name='heart-outline' size={48} color='#9CA3AF' />
                 <Text className='mt-4 text-gray-500 text-center'>
-                  Nenhuma receita encontrada
+                  {searchQuery
+                    ? 'Nenhuma receita encontrada'
+                    : 'Nenhuma receita favoritada'}
                 </Text>
                 <Text className='text-sm text-gray-400 text-center mt-1'>
-                  Que tal adicionar uma nova receita?
+                  {searchQuery
+                    ? 'Tente ajustar os filtros de busca'
+                    : 'Que tal favoritar algumas receitas?'}
                 </Text>
               </Box>
             ) : (
@@ -171,18 +229,9 @@ export function HomeView({
                             </HStack>
                           </VStack>
                           <VStack className='items-center space-y-2'>
-                            <TouchableOpacity
-                              onPress={() => onRecipeLike(recipe)}
-                              activeOpacity={1}
-                            >
-                              <Box className='w-10 h-10 bg-gray-100 rounded-full items-center justify-center'>
-                                <Ionicons
-                                  name={isFavorite(recipe.id) ? 'heart' : 'heart-outline'}
-                                  size={20}
-                                  color={isFavorite(recipe.id) ? '#EF4444' : '#6B7280'}
-                                />
-                              </Box>
-                            </TouchableOpacity>
+                            <Box className='w-10 h-10 bg-red-100 rounded-full items-center justify-center'>
+                              <Ionicons name='heart' size={20} color='#EF4444' />
+                            </Box>
                           </VStack>
                         </HStack>
                       </VStack>
