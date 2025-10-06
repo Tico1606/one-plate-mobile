@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router'
 import { useCallback, useState } from 'react'
-import { useRecipe, useRecipeFavorites } from '@/hooks'
+import { useFavorites } from '@/contexts'
+import { useRecipe } from '@/hooks'
 
 interface UseRecipeDetailProps {
   recipeId: string
@@ -14,7 +15,7 @@ export function useRecipeDetail({ recipeId }: UseRecipeDetailProps) {
   const { data: recipe, loading, error, refetch } = useRecipe(recipeId)
 
   // Hook para gerenciar favoritos
-  const { isFavorite, toggleFavorite } = useRecipeFavorites()
+  const { isFavorite, toggleFavorite } = useFavorites()
 
   // Handlers
   const handleLike = useCallback(() => {
@@ -74,7 +75,7 @@ export function useRecipeDetail({ recipeId }: UseRecipeDetailProps) {
 
     // Estados
     isAddingReview,
-    isLiked: recipe ? isFavorite(Number(recipe.id)) : false,
+    isLiked: recipe ? isFavorite(recipe.id) : false,
 
     // Handlers
     onLike: handleLike,

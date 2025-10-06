@@ -49,8 +49,26 @@ export function useProfilePage() {
     // TODO: Implementar navegação para configurações
   }
 
-  const handleMenuItemPress = (_item: MenuItem) => {
-    // TODO: Implementar navegação para item do menu
+  const handleMenuItemPress = (item: MenuItem) => {
+    switch (item.id) {
+      case 1: // Minhas Receitas
+        router.push('/(auth)/my-recipes')
+        break
+      case 2: // Favoritos
+        router.push('/(auth)/(tabs)/favorites')
+        break
+      case 3: // Configurações
+        // TODO: Implementar navegação para configurações
+        break
+      case 4: // Ajuda
+        // TODO: Implementar navegação para ajuda
+        break
+      case 5: // Sobre
+        // TODO: Implementar navegação para sobre
+        break
+      default:
+        break
+    }
   }
 
   return {
