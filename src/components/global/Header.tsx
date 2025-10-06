@@ -25,7 +25,6 @@ export function Header({ isLoading, onNotificationPress }: HeaderProps) {
         <TouchableOpacity onPress={onNotificationPress}>
           <Ionicons name='notifications' size={24} color='#374151' />
         </TouchableOpacity>
-        {isLoading && <ActivityIndicator size='small' color='#8B5CF6' />}
       </HStack>
     </HStack>
   )

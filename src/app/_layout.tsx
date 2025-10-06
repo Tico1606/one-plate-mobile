@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react'
 import { Box } from '@/components/ui/box'
 import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider'
 import { Text } from '@/components/ui/text'
+import { FavoritesProvider } from '@/contexts'
 import { useAuthToken } from '@/hooks/useAuthToken'
 import { ClerkProvider, clerkConfig } from '@/lib/clerk'
 import '@/styles/global.css'
@@ -19,13 +20,6 @@ const InitialLayout = () => {
   const { isLoaded, isSignedIn } = useAuth()
   const segments = useSegments()
   const router = useRouter()
-
-  // Verificação do status de autenticação
-  useEffect(() => {
-    if (isLoaded) {
-      // Status de autenticação verificado
-    }
-  }, [isLoaded])
 
   // Sincronizar token do Clerk com AsyncStorage
   useAuthToken()
@@ -82,7 +76,9 @@ export default function RootLayout() {
           publishableKey={clerkConfig?.publishableKey}
           tokenCache={clerkConfig.tokenCache}
         >
-          <InitialLayout />
+          <FavoritesProvider>
+            <InitialLayout />
+          </FavoritesProvider>
         </ClerkProvider>
       </GluestackUIProvider>
     </Box>
