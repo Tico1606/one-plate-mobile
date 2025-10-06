@@ -19,11 +19,11 @@ export function useRecipes(filters?: RecipeFilters) {
       filters?.sortBy,
       filters?.sortOrder,
       filters?.difficulty,
-      filters?.maxTime,
+      filters?.prepTime,
       filters?.maxCalories,
       filters?.minProtein,
       filters?.minRating,
-      filters?.minLikes,
+      filters?.minFavorites,
       filters?.authorId,
       filters?.status,
       filters?.featured,
@@ -129,16 +129,10 @@ export function useRecentRecipes(limit: number = 10) {
     try {
       setLoading(true)
       setError(null)
-      // console.log(
-      //   '🔍 DEBUG useRecentRecipes.fetchRecent - iniciando busca com limit:',
-      //   limit,
-      // )
+
       const result = await recipesService.getRecent(limit)
-      // console.log('🔍 DEBUG useRecentRecipes.fetchRecent - resultado recebido:', result)
       setData(result)
-      // console.log('🔍 DEBUG useRecentRecipes.fetchRecent - data atualizada:', result)
     } catch (err) {
-      console.error('❌ DEBUG useRecentRecipes.fetchRecent - erro:', err)
       setError(err instanceof Error ? err.message : 'Erro ao buscar receitas recentes')
     } finally {
       setLoading(false)

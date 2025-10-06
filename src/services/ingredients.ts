@@ -1,3 +1,4 @@
+import { API_CONFIG } from '@/constants/api'
 import { get, post } from './api'
 
 // Interface para ingrediente
@@ -21,19 +22,19 @@ export interface CreateIngredientResponse {
 export const ingredientsService = {
   // Buscar todos os ingredientes
   getAll: async (): Promise<Ingredient[]> => {
-    return get<Ingredient[]>('/ingredients')
+    return get<Ingredient[]>(API_CONFIG.ENDPOINTS.INGREDIENTS.LIST)
   },
 
   // Buscar ingrediente por ID
   getById: async (id: string): Promise<Ingredient> => {
-    return get<Ingredient>(`/ingredients/${id}`)
+    return get<Ingredient>(`${API_CONFIG.ENDPOINTS.INGREDIENTS.LIST}/${id}`)
   },
 
   // Criar novo ingrediente
   create: async (
     ingredient: CreateIngredientRequest,
   ): Promise<CreateIngredientResponse> => {
-    return post<CreateIngredientResponse>('/ingredients', ingredient)
+    return post<CreateIngredientResponse>(API_CONFIG.ENDPOINTS.INGREDIENTS.CREATE, ingredient)
   },
 
   // Buscar ou criar ingrediente por nome
@@ -58,16 +59,12 @@ export const ingredientsService = {
       }
 
       // Se não encontrou, cria um novo
-      console.log('🔧 Criando novo ingrediente:', { name: name.trim() })
       const response = await ingredientsService.create({ name: name.trim() })
       return response.ingredient
     } catch (error) {
       console.error('Erro ao buscar/criar ingrediente:', error)
       // Se falhar ao buscar, tenta criar diretamente
       try {
-        console.log('🔧 Fallback: criando ingrediente diretamente:', {
-          name: name.trim(),
-        })
         const response = await ingredientsService.create({ name: name.trim() })
         return response.ingredient
       } catch (createError) {

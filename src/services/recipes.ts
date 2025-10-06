@@ -13,7 +13,15 @@ export const recipesService = {
   getAll: async (filters?: RecipeFilters): Promise<PaginatedResponse<Recipe>> => {
     const params = new URLSearchParams()
 
-    if (filters?.category) params.append('categoryId', filters.category.toString())
+    // Suporte a múltiplas categorias - usar o novo formato
+    if (filters?.categories && filters.categories.length > 0) {
+      // Enviar como string separada por vírgulas: "Italiana,Jantar"
+      params.append('categories', filters.categories.join(','))
+    } else if (filters?.category) {
+      // Compatibilidade com categoria única
+      params.append('categoryId', filters.category.toString())
+    }
+
     if (filters?.difficulty) params.append('difficulty', filters.difficulty)
     if (filters?.prepTime) params.append('prepTime', filters.prepTime.toString())
     if (filters?.minRating) params.append('minRating', filters.minRating.toString())
@@ -295,11 +303,26 @@ export const recipesService = {
 
   // Criar nova receita
   create: async (recipe: CreateRecipeRequest): Promise<{ recipe: Recipe }> => {
-    return post<{ recipe: Recipe }>(API_CONFIG.ENDPOINTS.RECIPES.CREATE, recipe)
+    // Garantir que receitas criadas pelo método normal sejam PUBLICADAS
+    const publishedData = {
+      ...recipe,
+      status: 'PUBLISHED' as const,
+    }
+    return post<{ recipe: Recipe }>(API_CONFIG.ENDPOINTS.RECIPES.CREATE, publishedData)
+  },
+
+  // Criar nova receita como rascunho
+  createDraft: async (recipe: CreateRecipeRequest): Promise<{ recipe: Recipe }> => {
+    // Enviar com status DRAFT explicitamente
+    const draftData = {
+      ...recipe,
+      status: 'DRAFT' as const,
+    }
+    return post<{ recipe: Recipe }>(API_CONFIG.ENDPOINTS.RECIPES.CREATE, draftData)
   },
 
   // Atualizar receita
-  update: async (id: number, recipe: Partial<Recipe>): Promise<Recipe> => {
+  update: async (id: string | number, recipe: Partial<Recipe>): Promise<Recipe> => {
     const url = API_CONFIG.ENDPOINTS.RECIPES.UPDATE.replace(':id', id.toString())
     return put<Recipe>(url, recipe)
   },
@@ -311,15 +334,123 @@ export const recipesService = {
   },
 
   // Buscar receitas favoritas
-  // getFavorites: async (): Promise<Recipe[]> => {
-  //   return get<Recipe[]>(API_CONFIG.ENDPOINTS.RECIPES.FAVORITES)
-  // },
+  getFavorites: async (): Promise<Recipe[]> => {
+    try {
+      const result = await get<any>(API_CONFIG.ENDPOINTS.RECIPES.FAVORITES)
 
-  // Adicionar/remover favorito
-  toggleFavorite: async (recipeId: number): Promise<ApiResponse<boolean>> => {
-    return post<ApiResponse<boolean>>(
-      `${API_CONFIG.ENDPOINTS.RECIPES.FAVORITES}/${recipeId}`,
-    )
+      // O backend retorna { favorites: [{ recipe: Recipe, ... }] }
+      if (result.favorites && Array.isArray(result.favorites)) {
+        const rawRecipes = result.favorites.map((fav: any) => fav.recipe).filter(Boolean)
+
+        // Mapear os dados para o formato esperado
+        const recipes = rawRecipes.map((rawRecipe: any) => {
+          // Calcular averageRating baseado nas reviews se não vier da API
+          const calculateAverageRating = (reviews: any[]) => {
+            if (!reviews || reviews.length === 0) return 0
+            const sum = reviews.reduce((acc, review) => acc + (review.rating || 0), 0)
+            return sum / reviews.length
+          }
+
+          const calculatedAverageRating = calculateAverageRating(rawRecipe.reviews)
+
+          // Mapear os dados da API para o formato esperado
+          const mappedRecipe: Recipe = {
+            id: rawRecipe.id,
+            title: rawRecipe.title,
+            description: rawRecipe.description,
+            authorId: rawRecipe.authorId,
+            author: rawRecipe.author,
+            difficulty: rawRecipe.difficulty,
+            prepTime: rawRecipe.prepTime,
+            servings: rawRecipe.servings,
+            videoUrl: rawRecipe.videoUrl,
+            source: rawRecipe.source,
+            calories: rawRecipe.calories,
+            proteinGrams: rawRecipe.proteinGrams,
+            carbGrams: rawRecipe.carbGrams,
+            fatGrams: rawRecipe.fatGrams,
+            status: rawRecipe.status,
+            publishedAt: rawRecipe.publishedAt,
+            createdAt: rawRecipe.createdAt,
+            updatedAt: rawRecipe.updatedAt,
+            averageRating: calculatedAverageRating,
+            totalReviews: rawRecipe.reviews?.length || 0,
+            totalFavorites: rawRecipe._count?.favorites || 0,
+            totalViews: rawRecipe._count?.views || 0,
+            image: rawRecipe.photos?.[0]?.url || 'https://via.placeholder.com/400x300',
+            photos: rawRecipe.photos || [],
+            ingredients:
+              rawRecipe.ingredients?.map((ing: any) => ({
+                id: ing.ingredientId,
+                name: ing.ingredient?.name || ing.name,
+                amount: ing.amount,
+                unit: ing.unit,
+              })) || [],
+            instructions:
+              rawRecipe.steps?.map((step: any) => ({
+                id: step.id,
+                order: step.order,
+                description: step.description,
+                durationSec: step.durationSec,
+              })) || [],
+            categories:
+              rawRecipe.categories?.map((cat: any) => ({
+                id: cat.categoryId,
+                name: cat.category?.name || cat.name,
+              })) || [],
+            reviews: rawRecipe.reviews || [],
+            favorites: [],
+            views: [],
+          }
+
+          return mappedRecipe
+        })
+
+        return recipes
+      }
+
+      // Fallback para formato antigo
+      return result.recipes || result.data || []
+    } catch (error) {
+      console.error('❌ [RECIPES] Erro ao buscar favoritos:', error)
+      return []
+    }
+  },
+
+  // Adicionar favorito
+  addFavorite: async (recipeId: number | string): Promise<ApiResponse<boolean>> => {
+    const url = API_CONFIG.ENDPOINTS.RECIPES.FAVORITES
+    try {
+      const result = await post<ApiResponse<boolean>>(url, { recipeId })
+      return result
+    } catch (error) {
+      console.error('❌ [RECIPES] Erro ao adicionar favorito:', error)
+      throw error
+    }
+  },
+
+  // Remover favorito
+  removeFavorite: async (recipeId: number | string): Promise<ApiResponse<boolean>> => {
+    const url = `${API_CONFIG.ENDPOINTS.RECIPES.FAVORITES}/${recipeId}`
+    try {
+      const result = await del<ApiResponse<boolean>>(url)
+      return result
+    } catch (error) {
+      console.error('❌ [RECIPES] Erro ao remover favorito:', error)
+      throw error
+    }
+  },
+
+  // Adicionar/remover favorito (toggle)
+  toggleFavorite: async (
+    recipeId: number | string,
+    isCurrentlyFavorite: boolean,
+  ): Promise<ApiResponse<boolean>> => {
+    if (isCurrentlyFavorite) {
+      return recipesService.removeFavorite(recipeId)
+    } else {
+      return recipesService.addFavorite(recipeId)
+    }
   },
 
   // Buscar receitas por categoria
@@ -349,6 +480,126 @@ export const recipesService = {
       console.error('❌ Erro ao buscar receitas recentes:', error)
       // Se falhar, retornar array vazio em vez de lançar erro
       return []
+    }
+  },
+
+  // Buscar receitas do usuário
+  getUserRecipes: async (): Promise<Recipe[]> => {
+    try {
+      console.log(
+        '📥 getUserRecipes - Fazendo requisição para:',
+        API_CONFIG.ENDPOINTS.RECIPES.USER_RECIPES,
+      )
+      const result = await get<any>(API_CONFIG.ENDPOINTS.RECIPES.USER_RECIPES)
+      console.log('📥 getUserRecipes - Resposta bruta:', result)
+
+      // Mapear os dados para o formato esperado
+      const recipes =
+        result.recipes?.map((rawRecipe: any) => {
+          console.log('📥 getUserRecipes - Mapeando receita:', {
+            id: rawRecipe.id,
+            title: rawRecipe.title,
+            status: rawRecipe.status,
+          })
+
+          // Calcular averageRating baseado nas reviews se não vier da API
+          const calculateAverageRating = (reviews: any[]) => {
+            if (!reviews || reviews.length === 0) return 0
+            const sum = reviews.reduce((acc, review) => acc + (review.rating || 0), 0)
+            return sum / reviews.length
+          }
+
+          const calculatedAverageRating = calculateAverageRating(rawRecipe.reviews)
+
+          // Mapear os dados da API para o formato esperado
+          const mappedRecipe: Recipe = {
+            id: rawRecipe.id,
+            title: rawRecipe.title,
+            description: rawRecipe.description,
+            authorId: rawRecipe.authorId,
+            author: rawRecipe.author,
+            difficulty: rawRecipe.difficulty,
+            prepTime: rawRecipe.prepTime,
+            servings: rawRecipe.servings,
+            videoUrl: rawRecipe.videoUrl,
+            source: rawRecipe.source,
+            calories: rawRecipe.calories,
+            proteinGrams: rawRecipe.proteinGrams,
+            carbGrams: rawRecipe.carbGrams,
+            fatGrams: rawRecipe.fatGrams,
+            status: rawRecipe.status,
+            publishedAt: rawRecipe.publishedAt,
+            createdAt: rawRecipe.createdAt,
+            updatedAt: rawRecipe.updatedAt,
+            averageRating: calculatedAverageRating,
+            totalReviews: rawRecipe.reviews?.length || 0,
+            totalFavorites: rawRecipe._count?.favorites || 0,
+            totalViews: rawRecipe._count?.views || 0,
+            image: rawRecipe.photos?.[0]?.url || 'https://via.placeholder.com/400x300',
+            photos: rawRecipe.photos || [],
+            ingredients:
+              rawRecipe.ingredients?.map((ing: any) => ({
+                id: ing.ingredientId,
+                name: ing.ingredient?.name || ing.name,
+                amount: ing.amount,
+                unit: ing.unit,
+              })) || [],
+            instructions:
+              rawRecipe.steps?.map((step: any) => ({
+                id: step.id,
+                order: step.order,
+                description: step.description,
+                durationSec: step.durationSec,
+              })) || [],
+            categories:
+              rawRecipe.categories?.map((cat: any) => ({
+                id: cat.categoryId,
+                name: cat.category?.name || cat.name,
+              })) || [],
+            reviews: rawRecipe.reviews || [],
+            favorites: [],
+            views: [],
+          }
+
+          return mappedRecipe
+        }) || []
+
+      console.log('📥 getUserRecipes - Receitas mapeadas:', recipes.length)
+      console.log(
+        '📥 getUserRecipes - Status final das receitas:',
+        recipes.map((r: Recipe) => ({ id: r.id, title: r.title, status: r.status })),
+      )
+      return recipes
+    } catch (error) {
+      console.error('❌ Erro ao buscar receitas do usuário:', error)
+      return []
+    }
+  },
+
+  // Publicar rascunho
+  publishDraft: async (recipeId: string): Promise<ApiResponse<Recipe>> => {
+    const url = `${API_CONFIG.ENDPOINTS.RECIPES.PUBLISH.replace(':id', recipeId)}`
+    console.log('🔧 publishDraft - URL:', url)
+    console.log('🔧 publishDraft - RecipeId:', recipeId)
+    console.log('🔧 publishDraft - Payload:', {})
+
+    try {
+      const result = await put<ApiResponse<Recipe>>(url, {})
+      console.log('✅ publishDraft - Sucesso:', result)
+      return result
+    } catch (error) {
+      console.error('❌ publishDraft - Erro:', error)
+      console.error('❌ publishDraft - Tipo do erro:', typeof error)
+
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as any
+        console.error('❌ publishDraft - Status:', axiosError.response?.status)
+        console.error('❌ publishDraft - Data:', axiosError.response?.data)
+        console.error('❌ publishDraft - Headers:', axiosError.response?.headers)
+        console.error('❌ publishDraft - Config:', axiosError.config)
+      }
+
+      throw error
     }
   },
 }

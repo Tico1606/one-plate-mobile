@@ -8,7 +8,7 @@ export const authToken = {
     try {
       await AsyncStorage.setItem(AUTH_TOKEN_KEY, token)
     } catch (error) {
-      console.error('Erro ao salvar token:', error)
+      console.error('❌ [AUTH-TOKEN] Erro ao salvar token:', error)
     }
   },
 

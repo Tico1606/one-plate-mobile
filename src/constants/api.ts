@@ -1,8 +1,7 @@
 export const API_CONFIG = {
-  BASE_URL:
-    process.env.NODE_ENV === 'development'
-      ? 'http://192.168.0.111:3333/api'
-      : 'https://seu-backend-prod.com/api',
+  BASE_URL: __DEV__
+    ? 'http://192.168.0.111:3333/api'
+    : 'https://seu-backend-prod.com/api',
   TIMEOUT: 10000,
   ENDPOINTS: {
     AUTH: {
@@ -17,7 +16,9 @@ export const API_CONFIG = {
       CREATE: '/recipes', // POST - Criar receita (autenticado)
       UPDATE: '/recipes/:id', // PUT - Atualizar receita (autor/admin)
       DELETE: '/recipes/:id', // DELETE - Deletar receita (autor/admin)
-      FAVORITES: '/recipes/favorites', // GET - Buscar favoritos
+      FAVORITES: '/favorites', // GET - Buscar favoritos
+      USER_RECIPES: '/recipes/my-recipes', // GET - Buscar receitas do usuário logado
+      PUBLISH: '/recipes/:id/publish', // PUT - Publicar rascunho
     },
     CATEGORIES: {
       LIST: '/categories',

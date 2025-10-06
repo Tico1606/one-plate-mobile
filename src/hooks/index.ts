@@ -7,10 +7,6 @@ export {
   useRecipePreloader,
 } from './useRecipeCache'
 export {
-  useRecipeFavorite,
-  useRecipeFavorites,
-} from './useRecipeFavorites'
-export {
   useInfiniteRecipes,
   useRecentRecipes,
   useRecipe,

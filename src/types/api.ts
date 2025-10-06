@@ -186,7 +186,8 @@ export interface PaginatedResponse<T> {
 export interface RecipeFilters {
   // Filtros básicos
   search?: string
-  category?: string
+  category?: string // ID de categoria única (para compatibilidade)
+  categories?: string[] // Array de IDs de categorias para múltiplas categorias
   difficulty?: Difficulty
   prepTime?: number // Tempo de preparo em minutos
   servings?: number // Número de porções

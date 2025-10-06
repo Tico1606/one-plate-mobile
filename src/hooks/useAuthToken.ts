@@ -15,7 +15,7 @@ export function useAuthToken() {
             await authToken.save(token)
           }
         } catch (error) {
-          console.error('Erro ao sincronizar token:', error)
+          console.error('❌ [AUTH] Erro ao sincronizar token:', error)
         }
       } else {
         await authToken.remove()

@@ -1,11 +1,11 @@
 // Exemplo de como testar os hooks de receitas
 import { useState } from 'react'
+import { useFavorites } from '@/contexts'
 import {
   useCategories,
   useInfiniteRecipes,
   usePopularRecipes,
   useRecentRecipes,
-  useRecipeFavorites,
   useRecipeSearch,
   useRecipes,
 } from '@/hooks'
@@ -60,7 +60,7 @@ export function TestInfiniteRecipes() {
 
 // Exemplo 5: Favoritos
 export function TestFavorites() {
-  const { favoriteRecipes, isFavorite, toggleFavorite, loading } = useRecipeFavorites()
+  const { favoriteRecipes, isFavorite, toggleFavorite, loading } = useFavorites()
 
   console.log('Favoritos:', { favoriteRecipes, loading })
   return { favoriteRecipes, isFavorite, toggleFavorite, loading }
@@ -102,7 +102,7 @@ export function TestHomePageHooks() {
   )
 
   // Favoritos
-  const { isFavorite, toggleFavorite } = useRecipeFavorites()
+  const { isFavorite, toggleFavorite } = useFavorites()
 
   // Determinar quais receitas mostrar
   const recipes = searchQuery
