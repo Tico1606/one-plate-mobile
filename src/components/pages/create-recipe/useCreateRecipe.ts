@@ -40,7 +40,7 @@ export function useCreateRecipe() {
     description: '',
     difficulty: 'EASY',
     preparationTime: 0,
-    servings: 1,
+    servings: 0,
     calories: undefined,
     proteinGrams: undefined,
     carbGrams: undefined,
@@ -197,6 +197,134 @@ export function useCreateRecipe() {
     return null
   }, [formData])
 
+  // Salvar receita como rascunho
+  const saveRecipeAsDraft = useCallback(async () => {
+    try {
+      setIsLoading(true)
+
+      // Para rascunhos, exigir apenas título
+      if (!formData.title.trim()) {
+        showErrorToast('Título é obrigatório')
+        return
+      }
+
+      // Validações mais flexíveis para rascunho
+      const validSteps = formData.instructions
+        .filter((inst) => inst.description.trim())
+        .map((inst, index) => ({
+          order: index + 1,
+          description: inst.description.trim(),
+        }))
+
+      // Para rascunhos, ingredientes e instruções podem estar vazios
+      const recipeIngredients: Array<{
+        ingredientId: string
+        amount: number
+        unit: string
+      }> = []
+
+      // Se houver ingredientes válidos, processar
+      if (formData.ingredients.some((ing) => ing.name.trim())) {
+        const validIngredientNames = formData.ingredients
+          .filter((ing) => ing.name.trim() && ing.amount.trim() && ing.unit.trim())
+          .map((ing) => ing.name.trim())
+
+        if (validIngredientNames.length > 0) {
+          try {
+            const createdIngredients: ApiIngredient[] =
+              await ingredientsService.createMultiple(validIngredientNames)
+
+            recipeIngredients.push(
+              ...formData.ingredients
+                .filter((ing) => ing.name.trim() && ing.amount.trim() && ing.unit.trim())
+                .map((ing) => {
+                  const createdIngredient = createdIngredients.find(
+                    (ci) => ci?.name?.toLowerCase() === ing.name.trim().toLowerCase(),
+                  )
+                  return {
+                    ingredientId: createdIngredient?.id || ing.name.trim(),
+                    amount: parseFloat(ing.amount.trim()) || 0,
+                    unit: ing.unit.trim(),
+                  }
+                }),
+            )
+          } catch (ingredientError) {
+            console.warn('Erro ao criar ingredientes para rascunho:', ingredientError)
+            // Para rascunhos, usar nomes como IDs temporários
+            recipeIngredients.push(
+              ...formData.ingredients
+                .filter((ing) => ing.amount.trim() && ing.unit.trim())
+                .map((ing) => ({
+                  ingredientId: ing.name?.trim() || 'ingrediente',
+                  amount: parseFloat(ing.amount?.trim() || '0') || 0,
+                  unit: ing.unit?.trim() || 'unidade',
+                })),
+            )
+          }
+        }
+      }
+
+      // Filtrar imagens válidas
+      const validImages = formData.images.filter((img) => img.trim())
+
+      const draftData: CreateRecipeRequest = {
+        title: formData.title.trim(),
+        description:
+          formData.description.trim() ||
+          `Rascunho criado em ${new Date().toLocaleDateString()}`,
+        difficulty: formData.difficulty,
+        prepTime: formData.preparationTime || 0,
+        servings: formData.servings || 1,
+        videoUrl: formData.videoUrl?.trim() || undefined,
+        calories: formData.calories,
+        proteinGrams: formData.proteinGrams,
+        carbGrams: formData.carbGrams,
+        fatGrams: formData.fatGrams,
+        images: validImages.length > 0 ? validImages : [],
+        ingredients: recipeIngredients.length > 0 ? recipeIngredients : [],
+        steps:
+          validSteps.length > 0
+            ? validSteps
+            : [{ order: 1, description: 'Finalizar instruções...' }],
+        categories: formData.categoryIds.length > 0 ? formData.categoryIds : [],
+      }
+
+      const createdRecipe = await recipesService.createDraft(draftData)
+
+      // A API retorna a receita dentro de um objeto "recipe"
+      const recipeId = createdRecipe?.recipe?.id
+      if (recipeId) {
+        // Limpar o formulário antes de redirecionar
+        setFormData({
+          title: '',
+          description: '',
+          difficulty: 'EASY',
+          preparationTime: 0,
+          servings: 0,
+          calories: undefined,
+          proteinGrams: undefined,
+          carbGrams: undefined,
+          fatGrams: undefined,
+          videoUrl: '',
+          images: [''],
+          ingredients: [{ name: '', amount: '', unit: '' }],
+          instructions: [{ description: '' }],
+          categoryIds: [],
+        })
+        // Redirecionar para a receita criada como rascunho
+        router.push(`/(auth)/recipe-[id]?id=${recipeId}`)
+      } else {
+        console.error('❌ Rascunho criado mas sem ID:', createdRecipe)
+        showErrorToast('Rascunho salvo mas não foi possível redirecionar.')
+      }
+    } catch (err) {
+      console.error('Erro ao salvar rascunho:', err)
+      showErrorToast('Erro ao salvar rascunho. Tente novamente.')
+    } finally {
+      setIsLoading(false)
+    }
+  }, [formData, router, showErrorToast])
+
   // Salvar receita
   const saveRecipe = useCallback(async () => {
     const validationError = validateForm()
@@ -239,11 +367,8 @@ export function useCreateRecipe() {
       }> = []
 
       try {
-        console.log('🔧 Tentando criar ingredientes:', validIngredientNames)
         const createdIngredients: ApiIngredient[] =
           await ingredientsService.createMultiple(validIngredientNames)
-
-        console.log('✅ Ingredientes criados com sucesso:', createdIngredients)
 
         // Mapear ingredientes criados para o formato da receita
         recipeIngredients = formData.ingredients
@@ -254,7 +379,6 @@ export function useCreateRecipe() {
               (ci) => ci?.name?.toLowerCase() === ing.name.trim().toLowerCase(),
             )
             const ingredientId = createdIngredient?.id
-            console.log(`🔍 Mapeando ingrediente "${ing.name}" -> ID: ${ingredientId}`)
             return {
               ingredientId: ingredientId || ing.name.trim(),
               amount: parseFloat(ing.amount.trim()) || 0,
@@ -291,22 +415,34 @@ export function useCreateRecipe() {
         proteinGrams: formData.proteinGrams,
         carbGrams: formData.carbGrams,
         fatGrams: formData.fatGrams,
-        images: validImages.length > 0 ? validImages : undefined,
+        images: validImages.length > 0 ? validImages : [],
         ingredients: recipeIngredients,
         steps: validSteps,
         categories: formData.categoryIds,
       }
 
-      console.log('📤 Payload da receita:', JSON.stringify(recipeData, null, 2))
-      console.log('📊 Ingredientes finais:', recipeIngredients)
-      console.log('📋 Steps finais:', validSteps)
-
       const createdRecipe = await recipesService.create(recipeData)
-      console.log('✅ Receita criada com sucesso:', createdRecipe)
 
       // A API retorna a receita dentro de um objeto "recipe"
       const recipeId = createdRecipe?.recipe?.id
       if (recipeId) {
+        // Limpar o formulário antes de redirecionar
+        setFormData({
+          title: '',
+          description: '',
+          difficulty: 'EASY',
+          preparationTime: 0,
+          servings: 0,
+          calories: undefined,
+          proteinGrams: undefined,
+          carbGrams: undefined,
+          fatGrams: undefined,
+          videoUrl: '',
+          images: [''],
+          ingredients: [{ name: '', amount: '', unit: '' }],
+          instructions: [{ description: '' }],
+          categoryIds: [],
+        })
         // Redirecionar para a receita criada
         router.push(`/(auth)/recipe-[id]?id=${recipeId}`)
       } else {
@@ -364,6 +500,7 @@ export function useCreateRecipe() {
     updateImage,
     toggleCategory,
     saveRecipe,
+    saveRecipeAsDraft,
     clearForm,
   }
 }
