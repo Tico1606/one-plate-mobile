@@ -8,4 +8,5 @@ export function ExplorePage() {
 }
 
 export { ExploreView } from './ExploreView'
+export { RecipeList } from './RecipeList'
 export { useExplorePage } from './useExplorePage'

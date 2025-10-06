@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons'
-import { useEffect } from 'react'
 import { ActivityIndicator, ScrollView, TouchableOpacity } from 'react-native'
 import { Header } from '@/components/global/Header'
 import { Box } from '@/components/ui/box'
@@ -11,18 +10,17 @@ import { Text } from '@/components/ui/text'
 import { Textarea, TextareaInput } from '@/components/ui/textarea'
 import { VStack } from '@/components/ui/vstack'
 import type { Difficulty } from '@/types/api'
-import { ImageInput } from './ImageInput'
-import { IngredientInput } from './IngredientInput'
-import { InstructionInput } from './InstructionInput'
-import { useCreateRecipe } from './useCreateRecipe'
+import { ImageInput } from '../create-recipe/ImageInput'
+import { IngredientInput } from '../create-recipe/IngredientInput'
+import { InstructionInput } from '../create-recipe/InstructionInput'
+import { useEditRecipe } from './useEditRecipe'
 
-export function CreateRecipeView() {
+export function EditRecipeView() {
   const {
     formData,
     isLoading,
+    isLoadingRecipe,
     categories,
-    categoriesLoading,
-    loadCategories,
     updateField,
     addIngredient,
     updateIngredient,
@@ -35,13 +33,8 @@ export function CreateRecipeView() {
     updateImage,
     toggleCategory,
     saveRecipe,
-    saveRecipeAsDraft,
     clearForm,
-  } = useCreateRecipe()
-
-  useEffect(() => {
-    loadCategories()
-  }, [loadCategories])
+  } = useEditRecipe()
 
   const difficultyOptions = [
     { label: 'Fácil', value: 'EASY' as Difficulty },
@@ -49,11 +42,11 @@ export function CreateRecipeView() {
     { label: 'Difícil', value: 'HARD' as Difficulty },
   ]
 
-  if (categoriesLoading) {
+  if (isLoadingRecipe) {
     return (
       <Box className='flex-1 justify-center items-center'>
         <ActivityIndicator size='large' color='#8B5CF6' />
-        <Text className='mt-4 text-gray-600'>Carregando categorias...</Text>
+        <Text className='mt-4 text-gray-600'>Carregando receita...</Text>
       </Box>
     )
   }
@@ -77,7 +70,7 @@ export function CreateRecipeView() {
           {/* Título da página */}
           <HStack className='items-center justify-center mb-4'>
             <Text className='text-2xl font-extrabold text-purple-500 pb-1'>
-              Nova Receita
+              Editar Receita
             </Text>
           </HStack>
 
@@ -301,7 +294,7 @@ export function CreateRecipeView() {
                 {formData.ingredients.length > 0 ? (
                   formData.ingredients.map((ingredient, index) => (
                     <IngredientInput
-                      // biome-ignore lint/suspicious/noArrayIndexKey: a
+                      // biome-ignore lint/suspicious/noArrayIndexKey: Ingredientes podem ser reordenados e não têm IDs únicos até serem salvos
                       key={index}
                       ingredient={ingredient}
                       index={index}
@@ -337,7 +330,7 @@ export function CreateRecipeView() {
                 {formData.instructions.length > 0 ? (
                   formData.instructions.map((instruction, index) => (
                     <InstructionInput
-                      // biome-ignore lint/suspicious/noArrayIndexKey: a
+                      // biome-ignore lint/suspicious/noArrayIndexKey: Instruções podem ser reordenadas e não têm IDs únicos até serem salvas
                       key={index}
                       instruction={instruction}
                       index={index}
@@ -373,7 +366,7 @@ export function CreateRecipeView() {
                 {formData.images.length > 0 ? (
                   formData.images.map((image, index) => (
                     <ImageInput
-                      // biome-ignore lint/suspicious/noArrayIndexKey: a
+                      // biome-ignore lint/suspicious/noArrayIndexKey: Imagens podem ser reordenadas e não têm IDs únicos até serem salvas
                       key={index}
                       image={image}
                       index={index}
@@ -419,23 +412,9 @@ export function CreateRecipeView() {
                 </HStack>
               ) : (
                 <Text className='text-white font-medium text-lg tracking-normal'>
-                  Publicar Receita
+                  Salvar Alterações
                 </Text>
               )}
-            </Button>
-
-            <Button
-              onPress={saveRecipeAsDraft}
-              disabled={isLoading}
-              variant='outline'
-              className='border-purple-400 rounded-xl'
-            >
-              <HStack className='items-center space-x-2 gap-2'>
-                <Ionicons name='document-text-outline' size={16} color='#a855f7' />
-                <Text className='text-purple-500 font-medium text-lg tracking-normal'>
-                  Salvar como Rascunho
-                </Text>
-              </HStack>
             </Button>
 
             <Button
