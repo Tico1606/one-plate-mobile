@@ -47,7 +47,7 @@ export function useEditRecipe() {
     instructions: [{ description: '' }],
     categoryIds: [],
   })
-  const [isLoading, setIsLoading] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   const [isLoadingRecipe, setIsLoadingRecipe] = useState(true)
   const [categories, setCategories] = useState<Category[]>([])
   const [showErrorToast] = useState<(message: string) => void>(
@@ -111,9 +111,6 @@ export function useEditRecipe() {
     if (!formData.title.trim()) {
       return 'Título é obrigatório'
     }
-    if (!formData.description.trim()) {
-      return 'Descrição é obrigatória'
-    }
     if (formData.preparationTime <= 0) {
       return 'Tempo de preparo deve ser maior que zero'
     }
@@ -148,12 +145,15 @@ export function useEditRecipe() {
       return
     }
 
+    // Prevenir múltiplos cliques
+    if (isSaving) return
+
     try {
-      setIsLoading(true)
+      setIsSaving(true)
 
       const recipeData: Partial<Recipe> = {
         title: formData.title.trim(),
-        description: formData.description.trim(),
+        description: formData.description.trim() || undefined,
         difficulty: formData.difficulty,
         prepTime: formData.preparationTime,
         servings: formData.servings,
@@ -173,9 +173,9 @@ export function useEditRecipe() {
       console.error('Erro ao atualizar receita:', err)
       showErrorToast('Erro ao atualizar receita. Tente novamente.')
     } finally {
-      setIsLoading(false)
+      setIsSaving(false)
     }
-  }, [formData, validateForm, router, showErrorToast, id])
+  }, [formData, validateForm, router, showErrorToast, id, isSaving])
 
   // Limpar formulário
   const clearForm = useCallback(() => {
@@ -314,6 +314,11 @@ export function useEditRecipe() {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }, [])
 
+  // Voltar para a página anterior
+  const goBack = useCallback(() => {
+    router.replace('/(auth)/my-recipes')
+  }, [router])
+
   useEffect(() => {
     loadRecipe()
     loadCategories()
@@ -322,13 +327,14 @@ export function useEditRecipe() {
   return {
     // Estados
     formData,
-    isLoading,
+    isSaving,
     isLoadingRecipe,
     categories,
 
     // Handlers
     saveRecipe,
     clearForm,
+    goBack,
     addIngredient,
     removeIngredient,
     updateIngredient,

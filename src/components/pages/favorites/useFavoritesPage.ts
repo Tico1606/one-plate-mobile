@@ -1,6 +1,7 @@
 import { useRouter } from 'expo-router'
 import { useCallback, useMemo, useState } from 'react'
 import { useFavorites } from '@/contexts'
+import { useNotificationBadge } from '@/hooks/useNotificationBadge'
 import type { Recipe } from '@/types/api'
 
 export type SortOption =
@@ -27,6 +28,9 @@ export function useFavoritesPage() {
     loading: favoritesLoading,
     refetch: refetchFavorites,
   } = useFavorites()
+
+  // Hook para contador de notificações
+  const { unreadCount } = useNotificationBadge()
 
   // Filtrar e ordenar receitas favoritas
   const filteredAndSortedRecipes = useMemo(() => {
@@ -102,8 +106,8 @@ export function useFavoritesPage() {
   }, [])
 
   const handleNotificationPress = useCallback(() => {
-    // TODO: Implementar notificações
-  }, [])
+    router.push('/(auth)/notifications')
+  }, [router])
 
   const handleRecipePress = useCallback(
     (recipe: Recipe) => {
@@ -149,6 +153,7 @@ export function useFavoritesPage() {
     sortBy,
     sortDirection,
     isDropdownOpen,
+    unreadNotificationsCount: unreadCount,
 
     // Estados de loading
     isLoading,

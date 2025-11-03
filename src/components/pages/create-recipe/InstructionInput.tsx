@@ -27,9 +27,7 @@ export function InstructionInput({
   return (
     <VStack className='space-y-3'>
       <HStack className='items-center justify-between py-1'>
-        <Text className='font-semibold text-gray-700'>
-          Passo {index + 1}
-        </Text>
+        <Text className='font-semibold text-gray-700'>Passo {index + 1}</Text>
         {canRemove && (
           <TouchableOpacity
             onPress={() => onRemove(index)}

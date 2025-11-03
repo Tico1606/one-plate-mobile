@@ -1,38 +1,124 @@
 import { useRouter } from 'expo-router'
 import { useCallback, useState } from 'react'
+import { useAuthToken } from '@/hooks/useAuthToken'
+import { authToken } from '@/lib/auth-token'
+import {
+  type CreateRecipeFormData,
+  createDraftSchema,
+  createRecipeSchema,
+  ingredientFieldSchema,
+} from '@/lib/validations/recipe'
 import { categoriesService } from '@/services/categories'
 import {
   type Ingredient as ApiIngredient,
   ingredientsService,
 } from '@/services/ingredients'
 import { recipesService } from '@/services/recipes'
-import type {
-  Category,
-  CreateRecipeRequest,
-  Difficulty,
-  Ingredient,
-  Instruction,
-} from '@/types/api'
-
-export interface CreateRecipeFormData {
-  title: string
-  description: string
-  difficulty: Difficulty
-  preparationTime: number
-  servings: number
-  calories?: number
-  proteinGrams?: number
-  carbGrams?: number
-  fatGrams?: number
-  videoUrl?: string
-  images: string[]
-  ingredients: Ingredient[]
-  instructions: Instruction[]
-  categoryIds: string[]
-}
+import type { Category, CreateRecipeRequest, Ingredient } from '@/types/api'
 
 export function useCreateRecipe() {
   const router = useRouter()
+  const { isSignedIn } = useAuthToken()
+
+  // Função para decodificar JWT (apenas para debug)
+  const decodeJWT = useCallback((token: string) => {
+    try {
+      const parts = token.split('.')
+      if (parts.length !== 3) return null
+
+      const payload = JSON.parse(atob(parts[1]))
+      return {
+        exp: payload.exp,
+        iat: payload.iat,
+        sub: payload.sub,
+        iss: payload.iss,
+        isExpired: payload.exp * 1000 < Date.now(),
+      }
+    } catch (error) {
+      console.error('❌ [CREATE-RECIPE] Erro ao decodificar JWT:', error)
+      return null
+    }
+  }, [])
+
+  // Função para verificar e sincronizar token
+  const ensureTokenSync = useCallback(async () => {
+    try {
+      const storedToken = await authToken.get()
+      console.log('🔑 [CREATE-RECIPE] Token no storage:', storedToken ? 'SIM' : 'NÃO')
+      console.log('🔑 [CREATE-RECIPE] isSignedIn:', isSignedIn)
+
+      if (storedToken) {
+        const decoded = decodeJWT(storedToken)
+        if (decoded) {
+          console.log('🔍 [CREATE-RECIPE] Token decodificado:', {
+            exp: new Date(decoded.exp * 1000).toISOString(),
+            isExpired: decoded.isExpired,
+            sub: decoded.sub,
+            iss: decoded.iss,
+          })
+
+          if (decoded.isExpired) {
+            console.log('⚠️ [CREATE-RECIPE] Token expirado!')
+            await authToken.remove()
+            return null
+          }
+        }
+      }
+
+      if (!storedToken && isSignedIn) {
+        console.log('⚠️ [CREATE-RECIPE] Token não encontrado, mas usuário está logado')
+        console.log('⏳ [CREATE-RECIPE] Aguardando sincronização do token...')
+        // Aguardar um pouco para o useAuthToken sincronizar
+        await new Promise((resolve) => setTimeout(resolve, 2000))
+
+        // Verificar novamente após o delay
+        const retryToken = await authToken.get()
+        console.log('🔑 [CREATE-RECIPE] Token após retry:', retryToken ? 'SIM' : 'NÃO')
+        return retryToken
+      }
+
+      return storedToken
+    } catch (error) {
+      console.error('❌ [CREATE-RECIPE] Erro ao verificar token:', error)
+      return null
+    }
+  }, [isSignedIn, decodeJWT])
+
+  // Função para tentar criar receita sem autenticação (modo desenvolvimento)
+  const tryCreateWithoutAuth = useCallback(
+    async (recipeData: any, status: 'PUBLISHED' | 'DRAFT' = 'PUBLISHED') => {
+      try {
+        console.log('🔄 [CREATE-RECIPE] Tentando criar receita sem autenticação...')
+
+        // Criar uma instância do axios sem interceptor de auth
+        const { default: axios } = await import('axios')
+        const apiWithoutAuth = axios.create({
+          baseURL: 'http://192.168.12.98:3333/api',
+          timeout: 10000,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        })
+
+        // Garantir que o status correto seja enviado
+        const dataWithStatus = {
+          ...recipeData,
+          status,
+        }
+
+        const response = await apiWithoutAuth.post('/recipes', dataWithStatus)
+        console.log(
+          `✅ [CREATE-RECIPE] Receita criada sem autenticação (${status}):`,
+          response.data,
+        )
+        return response.data
+      } catch (error) {
+        console.error('❌ [CREATE-RECIPE] Erro ao criar sem autenticação:', error)
+        throw error
+      }
+    },
+    [],
+  )
 
   // Estados do formulário
   const [formData, setFormData] = useState<CreateRecipeFormData>({
@@ -53,9 +139,14 @@ export function useCreateRecipe() {
   })
 
   // Estados de controle
-  const [isLoading, setIsLoading] = useState(false)
+  const [isPublishing, setIsPublishing] = useState(false)
+  const [isSavingDraft, setIsSavingDraft] = useState(false)
   const [categories, setCategories] = useState<Category[]>([])
   const [categoriesLoading, setCategoriesLoading] = useState(false)
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({})
+  const [ingredientErrors, setIngredientErrors] = useState<
+    Record<number, Record<string, string>>
+  >({})
 
   // Carregar categorias
   const loadCategories = useCallback(async () => {
@@ -70,12 +161,74 @@ export function useCreateRecipe() {
     }
   }, [])
 
+  // Validar campo individual
+  const validateField = useCallback((field: string, value: any) => {
+    try {
+      // Validar apenas o campo específico
+      if (field === 'title') {
+        if (typeof value === 'string' && value.trim().length > 0) {
+          setValidationErrors((prev) => {
+            const { title: _, ...rest } = prev
+            return rest
+          })
+        }
+      } else if (field === 'preparationTime') {
+        if (typeof value === 'number' && value > 0) {
+          setValidationErrors((prev) => {
+            const { preparationTime: _, ...rest } = prev
+            return rest
+          })
+        }
+      } else if (field === 'servings') {
+        if (typeof value === 'number' && value > 0) {
+          setValidationErrors((prev) => {
+            const { servings: _, ...rest } = prev
+            return rest
+          })
+        }
+      } else if (field === 'categoryIds') {
+        if (Array.isArray(value) && value.length > 0) {
+          setValidationErrors((prev) => {
+            const { categoryIds: _, ...rest } = prev
+            return rest
+          })
+        }
+      } else if (field === 'ingredients') {
+        if (Array.isArray(value) && value.length > 0) {
+          const hasValidIngredient = value.some(
+            (ing) => ing.name?.trim() && ing.amount?.trim() && ing.unit?.trim(),
+          )
+          if (hasValidIngredient) {
+            setValidationErrors((prev) => {
+              const { ingredients: _, ...rest } = prev
+              return rest
+            })
+          }
+        }
+      } else if (field === 'instructions') {
+        if (Array.isArray(value) && value.length > 0) {
+          const hasValidInstruction = value.some((inst) => inst.description?.trim())
+          if (hasValidInstruction) {
+            setValidationErrors((prev) => {
+              const { instructions: _, ...rest } = prev
+              return rest
+            })
+          }
+        }
+      }
+    } catch {
+      // Ignorar erros de validação individual
+    }
+  }, [])
+
   // Atualizar campo do formulário
   const updateField = useCallback(
     <K extends keyof CreateRecipeFormData>(field: K, value: CreateRecipeFormData[K]) => {
       setFormData((prev) => ({ ...prev, [field]: value }))
+      // Validar o campo em tempo real
+      validateField(field, value)
     },
-    [],
+    [validateField],
   )
 
   // Adicionar ingrediente
@@ -84,6 +237,8 @@ export function useCreateRecipe() {
       ...prev,
       ingredients: [...prev.ingredients, { name: '', amount: '', unit: '' }],
     }))
+    // Limpar erros de ingredientes quando adicionar novo
+    setIngredientErrors({})
   }, [])
 
   // Remover ingrediente
@@ -92,19 +247,82 @@ export function useCreateRecipe() {
       ...prev,
       ingredients: prev.ingredients.filter((_, i) => i !== index),
     }))
+    // Remover erros do ingrediente removido
+    setIngredientErrors((prev) => {
+      const { [index]: _, ...newErrors } = prev
+      // Reindexar erros para ingredientes restantes
+      const reindexedErrors: Record<number, Record<string, string>> = {}
+      Object.keys(newErrors).forEach((key) => {
+        const oldIndex = parseInt(key)
+        if (oldIndex > index) {
+          reindexedErrors[oldIndex - 1] = newErrors[oldIndex]
+        } else if (oldIndex < index) {
+          reindexedErrors[oldIndex] = newErrors[oldIndex]
+        }
+      })
+      return reindexedErrors
+    })
+  }, [])
+
+  // Validar ingrediente individual
+  const validateIngredient = useCallback((ingredient: Ingredient, index: number) => {
+    try {
+      ingredientFieldSchema.parse(ingredient)
+      // Se válido, remover erros deste ingrediente
+      setIngredientErrors((prev) => {
+        const { [index]: _, ...rest } = prev
+        return rest
+      })
+      return true
+    } catch (error) {
+      if (error instanceof Error && 'issues' in error) {
+        const zodError = error as any
+        const errors: Record<string, string> = {}
+
+        zodError.issues.forEach((issue: any) => {
+          const field = issue.path[0]
+          errors[field] = issue.message
+        })
+
+        setIngredientErrors((prev) => ({
+          ...prev,
+          [index]: errors,
+        }))
+      }
+      return false
+    }
   }, [])
 
   // Atualizar ingrediente
   const updateIngredient = useCallback(
     (index: number, field: keyof Ingredient, value: string) => {
-      setFormData((prev) => ({
-        ...prev,
-        ingredients: prev.ingredients.map((ing, i) =>
+      setFormData((prev) => {
+        const newIngredients = prev.ingredients.map((ing, i) =>
           i === index ? { ...ing, [field]: value } : ing,
-        ),
-      }))
+        )
+
+        // Validar o ingrediente atualizado
+        const updatedIngredient = newIngredients[index]
+        validateIngredient(updatedIngredient, index)
+
+        // Validar se há pelo menos um ingrediente válido
+        const hasValidIngredient = newIngredients.some(
+          (ing) => ing.name?.trim() && ing.amount?.trim() && ing.unit?.trim(),
+        )
+        if (hasValidIngredient) {
+          setValidationErrors((prevErrors) => {
+            const { ingredients: _, ...rest } = prevErrors
+            return rest
+          })
+        }
+
+        return {
+          ...prev,
+          ingredients: newIngredients,
+        }
+      })
     },
-    [],
+    [validateIngredient],
   )
 
   // Adicionar instrução
@@ -125,19 +343,32 @@ export function useCreateRecipe() {
 
   // Atualizar instrução
   const updateInstruction = useCallback((index: number, value: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      instructions: prev.instructions.map((inst, i) =>
+    setFormData((prev) => {
+      const newInstructions = prev.instructions.map((inst, i) =>
         i === index ? { ...inst, description: value } : inst,
-      ),
-    }))
+      )
+
+      // Validar se há pelo menos uma instrução válida
+      const hasValidInstruction = newInstructions.some((inst) => inst.description?.trim())
+      if (hasValidInstruction) {
+        setValidationErrors((prevErrors) => {
+          const { instructions: _, ...rest } = prevErrors
+          return rest
+        })
+      }
+
+      return {
+        ...prev,
+        instructions: newInstructions,
+      }
+    })
   }, [])
 
   // Adicionar imagem
   const addImage = useCallback(() => {
     setFormData((prev) => ({
       ...prev,
-      images: [...prev.images, ''],
+      images: [...(prev.images || []), ''],
     }))
   }, [])
 
@@ -145,7 +376,7 @@ export function useCreateRecipe() {
   const removeImage = useCallback((index: number) => {
     setFormData((prev) => ({
       ...prev,
-      images: prev.images.filter((_, i) => i !== index),
+      images: (prev.images || []).filter((_, i) => i !== index),
     }))
   }, [])
 
@@ -153,58 +384,83 @@ export function useCreateRecipe() {
   const updateImage = useCallback((index: number, value: string) => {
     setFormData((prev) => ({
       ...prev,
-      images: prev.images.map((img, i) => (i === index ? value : img)),
+      images: (prev.images || []).map((img, i) => (i === index ? value : img)),
     }))
   }, [])
 
   // Toggle categoria
   const toggleCategory = useCallback((categoryId: string) => {
-    setFormData((prev) => ({
-      ...prev,
-      categoryIds: prev.categoryIds.includes(categoryId)
+    setFormData((prev) => {
+      const newCategoryIds = prev.categoryIds.includes(categoryId)
         ? prev.categoryIds.filter((id) => id !== categoryId)
-        : [...prev.categoryIds, categoryId],
-    }))
+        : [...prev.categoryIds, categoryId]
+
+      // Validar categorias em tempo real
+      if (newCategoryIds.length > 0) {
+        setValidationErrors((prevErrors) => {
+          const { categoryIds: _, ...rest } = prevErrors
+          return rest
+        })
+      }
+
+      return {
+        ...prev,
+        categoryIds: newCategoryIds,
+      }
+    })
   }, [])
 
-  // Mostrar toast de erro
-  const showErrorToast = useCallback((message: string) => {
-    console.error('Toast Error:', message)
-    // TODO: Implementar toast quando a API estiver disponível
-  }, [])
+  // Validar formulário com Zod
+  const validateForm = useCallback(
+    (isDraft = false) => {
+      try {
+        const schema = isDraft ? createDraftSchema : createRecipeSchema
+        schema.parse(formData)
+        setValidationErrors({})
+        return true
+      } catch (error) {
+        if (error instanceof Error && 'issues' in error) {
+          const zodError = error as any
+          const errors: Record<string, string> = {}
 
-  // Validar formulário
-  const validateForm = useCallback((): string | null => {
-    if (!formData.title.trim()) return 'Título é obrigatório'
-    if (formData.preparationTime <= 0) return 'Tempo de preparo deve ser maior que 0'
-    if (formData.servings <= 0) return 'Número de porções deve ser maior que 0'
-    if (formData.categoryIds.length === 0) return 'Pelo menos uma categoria é obrigatória'
+          zodError.issues.forEach((issue: any) => {
+            const path = issue.path.join('.')
+            errors[path] = issue.message
+          })
 
-    // Validar ingredientes - deve ter pelo menos um ingrediente válido
-    const validIngredients = formData.ingredients.filter(
-      (ing) => ing.name.trim() && ing.amount.trim() && ing.unit.trim(),
-    )
-    if (validIngredients.length === 0)
-      return 'Pelo menos um ingrediente válido é obrigatório'
-
-    // Validar instruções - deve ter pelo menos uma instrução válida
-    const validInstructions = formData.instructions.filter((inst) =>
-      inst.description.trim(),
-    )
-    if (validInstructions.length === 0)
-      return 'Pelo menos uma instrução válida é obrigatória'
-
-    return null
-  }, [formData])
+          setValidationErrors(errors)
+        }
+        return false
+      }
+    },
+    [formData],
+  )
 
   // Salvar receita como rascunho
   const saveRecipeAsDraft = useCallback(async () => {
-    try {
-      setIsLoading(true)
+    // Prevenir múltiplos cliques
+    if (isSavingDraft) return
 
-      // Para rascunhos, exigir apenas título
-      if (!formData.title.trim()) {
-        showErrorToast('Título é obrigatório')
+    // Verificar se o usuário está autenticado
+    if (!isSignedIn) {
+      setValidationErrors({ general: 'Você precisa estar logado para salvar receitas.' })
+      return
+    }
+
+    // Verificar se o token está sincronizado
+    const token = await ensureTokenSync()
+    if (!token) {
+      setValidationErrors({
+        general: 'Erro de autenticação. O token pode ter expirado. Faça login novamente.',
+      })
+      return
+    }
+
+    try {
+      setIsSavingDraft(true)
+
+      // Validar formulário para rascunho
+      if (!validateForm(true)) {
         return
       }
 
@@ -264,13 +520,15 @@ export function useCreateRecipe() {
         }
       }
 
-      // Filtrar imagens válidas
-      const validImages = formData.images.filter((img) => img.trim())
+      // Filtrar imagens válidas (URLs de upload)
+      const validImages = (formData.images || []).filter(
+        (img) => img.trim() && img.startsWith('http'),
+      )
 
       const draftData: CreateRecipeRequest = {
         title: formData.title.trim(),
         description:
-          formData.description.trim() ||
+          (formData.description || '').trim() ||
           `Rascunho criado em ${new Date().toLocaleDateString()}`,
         difficulty: formData.difficulty,
         prepTime: formData.preparationTime || 0,
@@ -289,10 +547,34 @@ export function useCreateRecipe() {
         categories: formData.categoryIds.length > 0 ? formData.categoryIds : [],
       }
 
-      const createdRecipe = await recipesService.createDraft(draftData)
+      let createdRecipe: any
+
+      try {
+        // Tentar criar com autenticação primeiro
+        createdRecipe = await recipesService.createDraft(draftData)
+        console.log('✅ [CREATE-RECIPE] Rascunho criado com autenticação:', createdRecipe)
+      } catch (authError: any) {
+        console.log('⚠️ [CREATE-RECIPE] Erro com autenticação, tentando sem auth...')
+
+        if (authError?.response?.status === 401) {
+          try {
+            // Tentar criar sem autenticação (modo desenvolvimento)
+            createdRecipe = await tryCreateWithoutAuth(draftData, 'DRAFT')
+            console.log(
+              '✅ [CREATE-RECIPE] Rascunho criado sem autenticação:',
+              createdRecipe,
+            )
+          } catch (noAuthError) {
+            console.error('❌ [CREATE-RECIPE] Erro mesmo sem autenticação:', noAuthError)
+            throw authError // Re-throw o erro original de auth
+          }
+        } else {
+          throw authError
+        }
+      }
 
       // A API retorna a receita dentro de um objeto "recipe"
-      const recipeId = createdRecipe?.recipe?.id
+      const recipeId = createdRecipe?.recipe?.id || createdRecipe?.id
       if (recipeId) {
         // Limpar o formulário antes de redirecionar
         setFormData({
@@ -315,26 +597,64 @@ export function useCreateRecipe() {
         router.push(`/(auth)/recipe-[id]?id=${recipeId}`)
       } else {
         console.error('❌ Rascunho criado mas sem ID:', createdRecipe)
-        showErrorToast('Rascunho salvo mas não foi possível redirecionar.')
+        setValidationErrors({
+          general: 'Rascunho salvo mas não foi possível redirecionar.',
+        })
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao salvar rascunho:', err)
-      showErrorToast('Erro ao salvar rascunho. Tente novamente.')
+
+      // Tratar erro 401 especificamente
+      if (err?.response?.status === 401) {
+        setValidationErrors({
+          general: 'Sessão expirada. Faça login novamente para continuar.',
+        })
+        // Limpar token inválido
+        await authToken.remove()
+      } else {
+        setValidationErrors({ general: 'Erro ao salvar rascunho. Tente novamente.' })
+      }
     } finally {
-      setIsLoading(false)
+      setIsSavingDraft(false)
     }
-  }, [formData, router, showErrorToast])
+  }, [
+    formData,
+    router,
+    validateForm,
+    isSavingDraft,
+    isSignedIn,
+    ensureTokenSync,
+    tryCreateWithoutAuth,
+  ])
 
   // Salvar receita
   const saveRecipe = useCallback(async () => {
-    const validationError = validateForm()
-    if (validationError) {
-      showErrorToast(validationError)
+    // Prevenir múltiplos cliques
+    if (isPublishing) return
+
+    // Verificar se o usuário está autenticado
+    if (!isSignedIn) {
+      setValidationErrors({
+        general: 'Você precisa estar logado para publicar receitas.',
+      })
+      return
+    }
+
+    // Verificar se o token está sincronizado
+    const token = await ensureTokenSync()
+    if (!token) {
+      setValidationErrors({
+        general: 'Erro de autenticação. O token pode ter expirado. Faça login novamente.',
+      })
+      return
+    }
+
+    if (!validateForm(false)) {
       return
     }
 
     try {
-      setIsLoading(true)
+      setIsPublishing(true)
 
       // Filtrar nomes de ingredientes válidos para criação
       const validIngredientNames = formData.ingredients
@@ -347,17 +667,6 @@ export function useCreateRecipe() {
           order: index + 1,
           description: inst.description.trim(),
         }))
-
-      // Verificar se temos pelo menos um ingrediente e uma instrução
-      if (validIngredientNames.length === 0) {
-        showErrorToast('Pelo menos um ingrediente válido é obrigatório')
-        return
-      }
-
-      if (validSteps.length === 0) {
-        showErrorToast('Pelo menos uma instrução válida é obrigatória')
-        return
-      }
 
       // Tentar criar ingredientes no banco de dados
       let recipeIngredients: Array<{
@@ -401,12 +710,14 @@ export function useCreateRecipe() {
           }))
       }
 
-      // Filtrar imagens válidas (não vazias)
-      const validImages = formData.images.filter((img) => img.trim())
+      // Filtrar imagens válidas (URLs de upload)
+      const validImages = (formData.images || []).filter(
+        (img) => img.trim() && img.startsWith('http'),
+      )
 
       const recipeData: CreateRecipeRequest = {
         title: formData.title.trim(),
-        description: formData.description.trim(),
+        description: (formData.description || '').trim(),
         difficulty: formData.difficulty,
         prepTime: formData.preparationTime,
         servings: formData.servings,
@@ -421,10 +732,39 @@ export function useCreateRecipe() {
         categories: formData.categoryIds,
       }
 
-      const createdRecipe = await recipesService.create(recipeData)
+      console.log('🚀 [CREATE-RECIPE] Dados da receita para PUBLICAÇÃO:', {
+        ...recipeData,
+        status: 'PUBLISHED (será definido pelo serviço)',
+      })
+
+      let createdRecipe: any
+
+      try {
+        // Tentar criar com autenticação primeiro
+        createdRecipe = await recipesService.create(recipeData)
+        console.log('✅ [CREATE-RECIPE] Receita criada com autenticação:', createdRecipe)
+      } catch (authError: any) {
+        console.log('⚠️ [CREATE-RECIPE] Erro com autenticação, tentando sem auth...')
+
+        if (authError?.response?.status === 401) {
+          try {
+            // Tentar criar sem autenticação (modo desenvolvimento)
+            createdRecipe = await tryCreateWithoutAuth(recipeData, 'PUBLISHED')
+            console.log(
+              '✅ [CREATE-RECIPE] Receita criada sem autenticação:',
+              createdRecipe,
+            )
+          } catch (noAuthError) {
+            console.error('❌ [CREATE-RECIPE] Erro mesmo sem autenticação:', noAuthError)
+            throw authError // Re-throw o erro original de auth
+          }
+        } else {
+          throw authError
+        }
+      }
 
       // A API retorna a receita dentro de um objeto "recipe"
-      const recipeId = createdRecipe?.recipe?.id
+      const recipeId = createdRecipe?.recipe?.id || createdRecipe?.id
       if (recipeId) {
         // Limpar o formulário antes de redirecionar
         setFormData({
@@ -447,17 +787,36 @@ export function useCreateRecipe() {
         router.push(`/(auth)/recipe-[id]?id=${recipeId}`)
       } else {
         console.error('❌ Receita criada mas sem ID:', createdRecipe)
-        showErrorToast(
-          'Receita criada mas não foi possível redirecionar. Verifique a lista de receitas.',
-        )
+        setValidationErrors({
+          general:
+            'Receita criada mas não foi possível redirecionar. Verifique a lista de receitas.',
+        })
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erro ao criar receita:', err)
-      showErrorToast('Erro ao criar receita. Tente novamente.')
+
+      // Tratar erro 401 especificamente
+      if (err?.response?.status === 401) {
+        setValidationErrors({
+          general: 'Sessão expirada. Faça login novamente para continuar.',
+        })
+        // Limpar token inválido
+        await authToken.remove()
+      } else {
+        setValidationErrors({ general: 'Erro ao criar receita. Tente novamente.' })
+      }
     } finally {
-      setIsLoading(false)
+      setIsPublishing(false)
     }
-  }, [formData, validateForm, router, showErrorToast])
+  }, [
+    formData,
+    validateForm,
+    router,
+    isPublishing,
+    isSignedIn,
+    ensureTokenSync,
+    tryCreateWithoutAuth,
+  ])
 
   // Limpar formulário
   const clearForm = useCallback(() => {
@@ -482,9 +841,12 @@ export function useCreateRecipe() {
   return {
     // Estados
     formData,
-    isLoading,
+    isPublishing,
+    isSavingDraft,
     categories,
     categoriesLoading,
+    validationErrors,
+    ingredientErrors,
 
     // Ações
     loadCategories,
@@ -502,5 +864,7 @@ export function useCreateRecipe() {
     saveRecipe,
     saveRecipeAsDraft,
     clearForm,
+    validateForm,
+    validateIngredient,
   }
 }

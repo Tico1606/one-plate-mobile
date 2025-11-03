@@ -23,6 +23,7 @@ interface ExploreViewProps {
   hasNextPage: boolean
   hasPrevPage: boolean
   isDropdownOpen: boolean
+  unreadNotificationsCount?: number
 
   // Handlers
   onRetry: () => void
@@ -57,6 +58,7 @@ const ExploreViewComponent = React.memo<ExploreViewProps>(
     hasNextPage,
     hasPrevPage,
     isDropdownOpen,
+    unreadNotificationsCount = 0,
     onSearchChange,
     onSearchPress,
     onNotificationPress,
@@ -115,6 +117,7 @@ const ExploreViewComponent = React.memo<ExploreViewProps>(
             {/* Header */}
             <Header
               isLoading={isRecipesLoading}
+              unreadCount={unreadNotificationsCount}
               onNotificationPress={onNotificationPress}
             />
 

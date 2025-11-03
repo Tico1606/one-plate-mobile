@@ -110,6 +110,7 @@ const RecipeListComponent = React.memo<RecipeListProps>(
                 <TouchableOpacity
                   className='w-8 h-8 bg-white rounded-lg items-center justify-center border border-gray-200'
                   onPress={onSortDirectionToggle}
+                  activeOpacity={1.0}
                 >
                   <Ionicons
                     name={sortDirection === 'asc' ? 'arrow-up' : 'arrow-down'}
@@ -122,6 +123,7 @@ const RecipeListComponent = React.memo<RecipeListProps>(
                 <TouchableOpacity
                   className='flex-row items-center space-x-1 px-3 py-2 bg-white rounded-lg gap-1'
                   onPress={onDropdownToggle}
+                  activeOpacity={1.0}
                 >
                   <Text className='text-sm font-medium text-gray-700'>
                     {currentSortLabel}

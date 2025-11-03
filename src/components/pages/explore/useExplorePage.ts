@@ -1,8 +1,10 @@
+import { useFocusEffect } from '@react-navigation/native'
 import { useRouter } from 'expo-router'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useFavorites } from '@/contexts'
 import { useRecipes } from '@/hooks'
 import { useCategories } from '@/hooks/useCategories'
+import { useNotificationBadge } from '@/hooks/useNotificationBadge'
 import type { Category, Recipe, RecipeFilters } from '@/types/api'
 
 export type SortOption =
@@ -81,6 +83,17 @@ export function useExplorePage() {
     loading: favoritesLoading,
   } = useFavorites()
 
+  // Hook para contador de notificações
+  const { unreadCount } = useNotificationBadge()
+
+  // Recarregar receitas quando a tela entrar em foco
+  useFocusEffect(
+    useCallback(() => {
+      refetchRecipes()
+      refetchCategories()
+    }, [refetchRecipes, refetchCategories]),
+  )
+
   // Extrair dados das receitas
   const recipes = recipesData?.data || []
   const pagination = recipesData?.pagination
@@ -128,8 +141,8 @@ export function useExplorePage() {
   }, [])
 
   const handleNotificationPress = useCallback(() => {
-    // TODO: Implementar notificações
-  }, [])
+    router.push('/(auth)/notifications')
+  }, [router])
 
   const handleCategoryPress = useCallback((category: Category) => {
     setSelectedCategories((prev) => {
@@ -235,6 +248,7 @@ export function useExplorePage() {
     currentPage,
     totalPages,
     isDropdownOpen,
+    unreadNotificationsCount: unreadCount,
 
     // Estados de loading
     isInitialLoading,

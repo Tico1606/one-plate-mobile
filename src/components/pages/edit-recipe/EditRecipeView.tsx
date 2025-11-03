@@ -18,7 +18,7 @@ import { useEditRecipe } from './useEditRecipe'
 export function EditRecipeView() {
   const {
     formData,
-    isLoading,
+    isSaving,
     isLoadingRecipe,
     categories,
     updateField,
@@ -34,6 +34,7 @@ export function EditRecipeView() {
     toggleCategory,
     saveRecipe,
     clearForm,
+    goBack,
   } = useEditRecipe()
 
   const difficultyOptions = [
@@ -55,7 +56,7 @@ export function EditRecipeView() {
     <Box className='flex-1 bg-zinc-100'>
       {/* Header */}
       <Header
-        isLoading={isLoading}
+        isLoading={isSaving}
         onNotificationPress={() => {
           // TODO: Implementar notificações
         }}
@@ -67,11 +68,19 @@ export function EditRecipeView() {
         contentContainerStyle={{ flexGrow: 1 }}
       >
         <VStack className='px-6 space-y-6'>
-          {/* Título da página */}
-          <HStack className='items-center justify-center mb-4'>
+          {/* Título da página com botão de voltar */}
+          <HStack className='items-center justify-between mb-4'>
+            <TouchableOpacity
+              onPress={goBack}
+              className='w-10 h-10 bg-gray-100 rounded-full items-center justify-center'
+              activeOpacity={0.7}
+            >
+              <Ionicons name='arrow-back' size={20} color='#6B7280' />
+            </TouchableOpacity>
             <Text className='text-2xl font-extrabold text-purple-500 pb-1'>
               Editar Receita
             </Text>
+            <Box className='w-10' />
           </HStack>
 
           {/* Título */}
@@ -402,10 +411,10 @@ export function EditRecipeView() {
           <VStack className='space-y-3 py-6 gap-2'>
             <Button
               onPress={saveRecipe}
-              disabled={isLoading}
+              disabled={isSaving}
               className='bg-purple-500 p-1 rounded-xl'
             >
-              {isLoading ? (
+              {isSaving ? (
                 <HStack className='items-center space-x-2'>
                   <ActivityIndicator size='small' color='white' />
                   <Text className='text-white font-semibold'>Salvando...</Text>
@@ -419,6 +428,7 @@ export function EditRecipeView() {
 
             <Button
               onPress={clearForm}
+              disabled={isSaving}
               variant='outline'
               className='border-gray-300 rounded-xl'
             >
