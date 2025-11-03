@@ -34,6 +34,29 @@ export const verifyCodeSchema = z.object({
     .regex(/^\d{6}$/, 'Código deve conter apenas números'),
 })
 
+export const forgotPasswordSchema = z.object({
+  email: z.string().min(1, 'Email é obrigatório').email('Email inválido'),
+})
+
+export const resetPasswordSchema = z
+  .object({
+    newPassword: z
+      .string()
+      .min(8, 'Senha deve ter pelo menos 8 caracteres')
+      .max(100, 'Senha muito longa')
+      .regex(
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+        'Senha deve conter pelo menos uma letra minúscula, uma maiúscula e um número',
+      ),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: 'Senhas não coincidem',
+    path: ['confirmPassword'],
+  })
+
 export type LoginFormData = z.infer<typeof loginSchema>
 export type SignUpFormData = z.infer<typeof signUpSchema>
 export type VerifyCodeFormData = z.infer<typeof verifyCodeSchema>
+export type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>
+export type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>

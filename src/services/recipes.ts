@@ -303,28 +303,64 @@ export const recipesService = {
 
   // Criar nova receita
   create: async (recipe: CreateRecipeRequest): Promise<{ recipe: Recipe }> => {
-    // Garantir que receitas criadas pelo método normal sejam PUBLICADAS
+    // Mapear images para photos (backend espera objetos com url e order)
+    const { images, ...restRecipe } = recipe
+    const photos = (images || []).map((url, index) => ({
+      url,
+      order: index,
+    }))
+
     const publishedData = {
-      ...recipe,
+      ...restRecipe,
+      photos, // Converter strings em objetos { url, order }
       status: 'PUBLISHED' as const,
     }
+    console.log('🚀 [RECIPES-SERVICE] Criando receita PUBLICADA:', {
+      ...publishedData,
+      status: 'PUBLISHED',
+    })
     return post<{ recipe: Recipe }>(API_CONFIG.ENDPOINTS.RECIPES.CREATE, publishedData)
   },
 
   // Criar nova receita como rascunho
   createDraft: async (recipe: CreateRecipeRequest): Promise<{ recipe: Recipe }> => {
-    // Enviar com status DRAFT explicitamente
+    // Mapear images para photos (backend espera objetos com url e order)
+    const { images, ...restRecipe } = recipe
+    const photos = (images || []).map((url, index) => ({
+      url,
+      order: index,
+    }))
+
     const draftData = {
-      ...recipe,
+      ...restRecipe,
+      photos, // Converter strings em objetos { url, order }
       status: 'DRAFT' as const,
     }
+    console.log('📝 [RECIPES-SERVICE] Criando receita RASCUNHO:', {
+      ...draftData,
+      status: 'DRAFT',
+    })
     return post<{ recipe: Recipe }>(API_CONFIG.ENDPOINTS.RECIPES.CREATE, draftData)
   },
 
   // Atualizar receita
   update: async (id: string | number, recipe: Partial<Recipe>): Promise<Recipe> => {
     const url = API_CONFIG.ENDPOINTS.RECIPES.UPDATE.replace(':id', id.toString())
-    return put<Recipe>(url, recipe)
+
+    // Se a receita tiver images, mapear para photos com objetos { url, order }
+    const { images, ...restRecipe } = recipe as any
+    const updateData =
+      images !== undefined
+        ? {
+            ...restRecipe,
+            photos: images.map((url: string, index: number) => ({
+              url,
+              order: index,
+            })),
+          }
+        : recipe
+
+    return put<Recipe>(url, updateData)
   },
 
   // Deletar receita

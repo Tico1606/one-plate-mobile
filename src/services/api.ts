@@ -154,6 +154,16 @@ export const put = async <T = any>(
   return response.data
 }
 
+// Função para fazer requisições PATCH
+export const patch = async <T = any>(
+  url: string,
+  data?: any,
+  config?: AxiosRequestConfig,
+): Promise<T> => {
+  const response = await api.patch<T>(url, data, config)
+  return response.data
+}
+
 // Função para fazer requisições DELETE
 export const del = async <T = any>(
   url: string,

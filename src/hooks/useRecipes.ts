@@ -57,7 +57,7 @@ export function useRecipe(id: string | number) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  useEffect(() => {
+  const fetchRecipe = useCallback(async () => {
     if (!id) {
       setLoading(false)
       return
@@ -70,27 +70,27 @@ export function useRecipe(id: string | number) {
       return
     }
 
-    const fetchRecipe = async () => {
-      try {
-        setLoading(true)
-        setError(null)
+    try {
+      setLoading(true)
+      setError(null)
 
-        // Converter para número apenas se for um número válido
-        const numericId =
-          typeof id === 'string' && !Number.isNaN(Number(id)) ? Number(id) : id
-        const result = await recipesService.getById(numericId)
-        setData(result)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Erro ao buscar receita')
-      } finally {
-        setLoading(false)
-      }
+      // Converter para número apenas se for um número válido
+      const numericId =
+        typeof id === 'string' && !Number.isNaN(Number(id)) ? Number(id) : id
+      const result = await recipesService.getById(numericId)
+      setData(result)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Erro ao buscar receita')
+    } finally {
+      setLoading(false)
     }
-
-    fetchRecipe()
   }, [id])
 
-  return { data, loading, error, refetch: () => {} }
+  useEffect(() => {
+    fetchRecipe()
+  }, [fetchRecipe])
+
+  return { data, loading, error, refetch: fetchRecipe }
 }
 
 // Hook para receitas populares (comentado - método não disponível)

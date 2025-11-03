@@ -118,6 +118,7 @@ export interface User {
   id: string
   email: string
   name?: string
+  description?: string
   photoUrl?: string
   role: Role
   createdAt: Date
@@ -240,9 +241,10 @@ export interface CreateRecipeRequest {
   proteinGrams?: number
   carbGrams?: number
   fatGrams?: number
+  status?: RecipeStatus // Status da receita (DRAFT ou PUBLISHED)
 
   // Conteúdo
-  images?: string[] // URLs das imagens
+  images?: string[] // URLs das imagens (mapeado para photos no backend)
   ingredients: Array<{
     ingredientId: string
     amount: number
@@ -344,6 +346,7 @@ export interface RecipeFormData {
 export interface UserFormData {
   name: string
   email: string
+  description?: string
   photoUrl: File | string
 }
 
@@ -479,6 +482,27 @@ export interface FilterOption {
   value: string
   label: string
   count?: number
+}
+
+// =============================================================================
+// TIPOS PARA NOTIFICAÇÕES
+// =============================================================================
+
+export interface Notification {
+  id: string
+  userId: string
+  type: 'review' | 'favorite' | 'comment' | 'follow' | 'system'
+  title: string
+  message: string
+  isRead: boolean
+  createdAt: string
+  updatedAt: string
+
+  // Dados opcionais para navegação
+  recipeId?: string
+  userId?: string
+  reviewId?: string
+  commentId?: string
 }
 
 // =============================================================================
