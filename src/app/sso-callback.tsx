@@ -19,7 +19,16 @@ export default function SSOCallback() {
         })
 
         if (result?.createdSessionId) {
-          console.log('✅ Sessão criada, criando usuário no backend...')
+          console.log('✅ Sessão criada, ativando sessão no Clerk...')
+          try {
+            if (typeof result.setActive === 'function') {
+              await result.setActive({ session: result.createdSessionId })
+            }
+          } catch (err) {
+            console.error('❌ Erro ao ativar sessão no Clerk:', err)
+          }
+
+          console.log('✅ Sessão ativa, criando usuário no backend...')
           try {
             await createUserInBackend()
           } catch (error) {

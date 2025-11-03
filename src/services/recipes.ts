@@ -364,7 +364,7 @@ export const recipesService = {
   },
 
   // Deletar receita
-  delete: async (id: number): Promise<ApiResponse<null>> => {
+  delete: async (id: string | number): Promise<ApiResponse<null>> => {
     const url = API_CONFIG.ENDPOINTS.RECIPES.DELETE.replace(':id', id.toString())
     return del<ApiResponse<null>>(url)
   },

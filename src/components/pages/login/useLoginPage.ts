@@ -177,6 +177,18 @@ export function useLoginPage() {
       if (result.createdSessionId) {
         console.log('✅ [LOGIN-OAUTH] Sessão criada com sucesso')
 
+        // Ativar a sessão no Clerk para refletir estado autenticado
+        try {
+          if (typeof result.setActive === 'function') {
+            await result.setActive({ session: result.createdSessionId })
+          } else if (typeof setActive === 'function') {
+            await setActive({ session: result.createdSessionId })
+          }
+          console.log('✅ [LOGIN-OAUTH] Sessão ativada no Clerk')
+        } catch (err) {
+          console.error('❌ [LOGIN-OAUTH] Erro ao ativar sessão no Clerk:', err)
+        }
+
         // Aguardar mais tempo para garantir que o Clerk processou completamente a sessão
         await new Promise((resolve) => setTimeout(resolve, 2000))
 

@@ -123,7 +123,7 @@ export function useMyRecipesPage() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await recipesService.delete(parseInt(recipe.id))
+              await recipesService.delete(recipe.id)
 
               // Remover da lista localmente
               setRecipes((prev) => prev.filter((r) => r.id !== recipe.id))
