@@ -1,27 +1,35 @@
 {
   "expo": {
-    "name": "starter-kit-expo",
-    "slug": "starter-kit-expo",
+    "name": "One Plate",
+    "slug": "one-plate",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "starterkitexpo",
+    "scheme": "oneplate",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "projectId": "${EXPO_PUBLIC_PROJECT_ID}",
     "splash": {
       "image": "./assets/images/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSUserNotificationsUsageDescription": "Este app envia notificações sobre suas receitas favoritas."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "edgeToEdgeEnabled": true
+      "edgeToEdgeEnabled": true,
+      "permissions": [
+        "android.permission.VIBRATE",
+        "android.permission.RECEIVE_BOOT_COMPLETED"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -32,13 +40,23 @@
       "expo-router",
       "expo-web-browser",
       "expo-font",
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#8B5CF6",
+          "defaultChannel": "default"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
     },
     "extra": {
-      "CLERK_PUBLISHABLE_KEY": "${CLERK_PUBLISHABLE_KEY}"
+      "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "${EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY}",
+      "EXPO_PUBLIC_PROJECT_ID": "${EXPO_PUBLIC_PROJECT_ID}",
+      "EXPO_PUBLIC_VAPID_PUBLIC_KEY": "${EXPO_PUBLIC_VAPID_PUBLIC_KEY}"
     }
   }
 }
