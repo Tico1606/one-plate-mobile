@@ -1,105 +1,127 @@
 // Teste de conectividade com o backend
 import { API_CONFIG } from '@/constants/api'
 
-export async function testBackendConnection() {
-  console.log('🔍 Testando conectividade com o backend...')
-  console.log('Base URL:', API_CONFIG.BASE_URL)
-
+export const testBackendHealth = async () => {
   try {
-    // Teste básico de conectividade
-    const response = await fetch(`${API_CONFIG.BASE_URL}/health`)
-    console.log('✅ Health check response:', response.status)
-  } catch (error) {
-    console.log('❌ Health check failed:', error)
-  }
+    console.log('🔗 [TEST] Testando conectividade com backend...')
+    console.log('🌐 [TEST] Base URL:', API_CONFIG.BASE_URL)
 
-  try {
-    // Teste das rotas principais
-    const routes = [
-      '/categories',
-      '/recipes',
-      '/recipes/recent',
-      '/recipes/popular',
-      '/auth/login',
-    ]
+    // Tentar acessar um endpoint simples primeiro
+    const baseUrlWithoutApi = API_CONFIG.BASE_URL.replace('/api', '')
+    console.log('🔗 [TEST] Testando:', `${baseUrlWithoutApi}/health`)
 
-    for (const route of routes) {
-      try {
-        const response = await fetch(`${API_CONFIG.BASE_URL}${route}`)
-        console.log(`✅ ${route}: ${response.status}`)
-      } catch (error) {
-        console.log(`❌ ${route}: ${error.message}`)
-      }
+    const response = await fetch(`${baseUrlWithoutApi}/health`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+
+    console.log('📡 [TEST] Status:', response.status)
+    console.log('📡 [TEST] Status Text:', response.statusText)
+    console.log('📡 [TEST] Headers:', Object.fromEntries(response.headers.entries()))
+
+    if (response.ok) {
+      const data = await response.text()
+      console.log('✅ [TEST] Backend está funcionando!')
+      console.log('📄 [TEST] Resposta:', data)
+      return true
+    } else {
+      console.log('⚠️ [TEST] Backend respondeu com erro:', response.status)
+      return false
     }
   } catch (error) {
-    console.log('❌ Erro ao testar rotas:', error)
+    console.error('❌ [TEST] Erro ao conectar com backend:', error)
+    return false
   }
 }
 
-// Função para testar com dados mockados
-export function testWithMockData() {
-  console.log('🧪 Testando com dados mockados...')
+export const testUploadEndpointExists = async () => {
+  try {
+    console.log('📤 [TEST] Testando se endpoint de upload existe...')
 
-  const mockCategories = [
-    {
-      id: 1,
-      name: 'Sobremesas',
-      icon: 'ice-cream',
-      color: 'bg-pink-500',
-      iconColor: 'white',
-      recipeCount: 5,
-    },
-    {
-      id: 2,
-      name: 'Massas',
-      icon: 'restaurant',
-      color: 'bg-orange-500',
-      iconColor: 'white',
-      recipeCount: 8,
-    },
-    {
-      id: 3,
-      name: 'Carnes',
-      icon: 'nutrition',
-      color: 'bg-red-500',
-      iconColor: 'white',
-      recipeCount: 12,
-    },
-  ]
+    const uploadUrl = `${API_CONFIG.BASE_URL}/uploads/recipe-photo`
+    console.log('🌐 [TEST] URL do upload:', uploadUrl)
 
-  const mockRecipes = [
-    {
-      id: 1,
-      title: 'Pudim de Leite',
-      description: 'Pudim cremoso e delicioso',
-      author: 'João Silva',
-      authorId: 1,
-      rating: 4.5,
-      time: '2h',
-      difficulty: 'medium',
-      servings: 8,
-      likes: 25,
-      image: 'https://via.placeholder.com/300x200',
-      ingredients: [
-        { id: 1, name: 'Leite condensado', amount: '1', unit: 'lata' },
-        { id: 2, name: 'Leite', amount: '2', unit: 'xícaras' },
-        { id: 3, name: 'Ovos', amount: '3', unit: 'unidades' },
-      ],
-      instructions: [
-        'Misture todos os ingredientes no liquidificador',
-        'Caramelize uma forma com açúcar',
-        'Despeje a mistura na forma',
-        'Leve ao forno em banho-maria por 1h30',
-      ],
-      tags: ['sobremesa', 'doce', 'tradicional'],
-      categoryId: 1,
-      createdAt: '2024-01-15T10:00:00Z',
-      updatedAt: '2024-01-15T10:00:00Z',
-    },
-  ]
+    // Tentar uma requisição OPTIONS para ver se o endpoint existe
+    const response = await fetch(uploadUrl, {
+      method: 'OPTIONS',
+    })
 
-  console.log('📂 Categorias mockadas:', mockCategories)
-  console.log('🍽️ Receitas mockadas:', mockRecipes)
+    console.log('📡 [TEST] Status OPTIONS:', response.status)
+    console.log(
+      '📡 [TEST] Headers OPTIONS:',
+      Object.fromEntries(response.headers.entries()),
+    )
 
-  return { categories: mockCategories, recipes: mockRecipes }
+    if (response.status === 404) {
+      console.log('❌ [TEST] Endpoint não encontrado!')
+      console.log('💡 [TEST] Verifique se:')
+      console.log('   - O backend está rodando')
+      console.log('   - O IP está correto')
+      console.log('   - Os endpoints de upload estão implementados')
+      return false
+    } else if (response.status === 405) {
+      console.log('✅ [TEST] Endpoint existe (não aceita OPTIONS, normal)')
+      return true
+    } else {
+      console.log('✅ [TEST] Endpoint está respondendo')
+      return true
+    }
+  } catch (error) {
+    console.error('❌ [TEST] Erro ao testar endpoint:', error)
+    return false
+  }
+}
+
+export const testAuthEndpoint = async () => {
+  try {
+    console.log('🔐 [TEST] Testando endpoint de autenticação...')
+
+    const authUrl = `${API_CONFIG.BASE_URL}/auth/login`
+    console.log('🌐 [TEST] URL de auth:', authUrl)
+
+    // Tentar uma requisição OPTIONS
+    const response = await fetch(authUrl, {
+      method: 'OPTIONS',
+    })
+
+    console.log('📡 [TEST] Status auth OPTIONS:', response.status)
+
+    if (response.status === 404) {
+      console.log('❌ [TEST] Endpoint de auth não encontrado!')
+      return false
+    } else {
+      console.log('✅ [TEST] Endpoint de auth existe')
+      return true
+    }
+  } catch (error) {
+    console.error('❌ [TEST] Erro ao testar auth:', error)
+    return false
+  }
+}
+
+export const runAllBackendTests = async () => {
+  console.log('🚀 [TEST] Iniciando testes completos do backend...')
+  console.log('=' * 50)
+
+  const healthOk = await testBackendHealth()
+  console.log('')
+
+  if (healthOk) {
+    const uploadOk = await testUploadEndpointExists()
+    console.log('')
+
+    const authOk = await testAuthEndpoint()
+    console.log('')
+
+    console.log('📊 [TEST] Resumo dos testes:')
+    console.log(`  ✅ Health: ${healthOk ? 'OK' : 'FALHOU'}`)
+    console.log(`  ${uploadOk ? '✅' : '❌'} Upload: ${uploadOk ? 'OK' : 'FALHOU'}`)
+    console.log(`  ${authOk ? '✅' : '❌'} Auth: ${authOk ? 'OK' : 'FALHOU'}`)
+  } else {
+    console.log('❌ [TEST] Backend não está respondendo - verifique a conectividade')
+  }
+
+  console.log('🏁 [TEST] Testes concluídos')
 }

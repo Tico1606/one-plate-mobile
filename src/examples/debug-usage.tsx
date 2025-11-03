@@ -2,6 +2,13 @@
 import { useState } from 'react'
 import { Button, Modal, Text, View } from 'react-native'
 import { RecipeDataViewer, TestHooks } from '@/components/debug'
+import { runImageDebugTests } from './debug-image-issue'
+import { runAllBackendTests } from './test-backend-connection'
+import { runPhotosFormatTests } from './test-photos-format'
+import { runRawApiTests } from './test-raw-api-response'
+import { runRecipeCreationTests } from './test-recipe-creation'
+import { runImageDisplayTests } from './test-recipe-display'
+import { runUploadTests } from './test-upload'
 
 export function DebugUsageExample() {
   const [showTestHooks, setShowTestHooks] = useState(false)
@@ -20,6 +27,20 @@ export function DebugUsageExample() {
           title='📊 Visualizador de Dados de Receitas'
           onPress={() => setShowRecipeViewer(true)}
         />
+
+        <Button title='🔗 Testar Conectividade Backend' onPress={runAllBackendTests} />
+
+        <Button title='📤 Testar Upload de Imagens' onPress={runUploadTests} />
+
+        <Button title='🍽️ Testar Criação de Receitas' onPress={runRecipeCreationTests} />
+
+        <Button title='🖼️ Testar Exibição de Imagens' onPress={runImageDisplayTests} />
+
+        <Button title='🔍 Testar Resposta Bruta da API' onPress={runRawApiTests} />
+
+        <Button title='🐛 Debug Problema de Imagens' onPress={runImageDebugTests} />
+
+        <Button title='📸 Testar Formato das Photos' onPress={runPhotosFormatTests} />
       </View>
 
       {/* Modal para TestHooks */}
