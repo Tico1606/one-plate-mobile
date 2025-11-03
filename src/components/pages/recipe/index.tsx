@@ -8,8 +8,25 @@ export function RecipeDetailPage() {
   const params = useLocalSearchParams()
   const id = (params.id as string) || ''
 
-  const { recipe, isLoading, error, onLike, onAddReview, onToggleHelpful, onBack } =
-    useRecipeDetail({ recipeId: id })
+  const {
+    recipe,
+    isLoading,
+    isAddingReview,
+    isTogglingFavorite,
+    showReviewModal,
+    isLiked,
+    hasUserReviewed,
+    editingReview,
+    user,
+    error,
+    onLike,
+    onOpenReviewModal,
+    onCloseReviewModal,
+    onAddReview,
+    onEditReview,
+    onToggleHelpful,
+    onBack,
+  } = useRecipeDetail({ recipeId: id })
 
   if (error) {
     return (
@@ -55,9 +72,19 @@ export function RecipeDetailPage() {
     <RecipeDetailView
       recipe={recipe || ({} as any)}
       isLoading={isLoading}
+      isAddingReview={isAddingReview}
+      isTogglingFavorite={isTogglingFavorite}
+      showReviewModal={showReviewModal}
+      isLiked={isLiked}
+      hasUserReviewed={hasUserReviewed}
+      user={user}
+      editingReview={editingReview}
       onBack={onBack}
       onLike={onLike}
+      onOpenReviewModal={onOpenReviewModal}
+      onCloseReviewModal={onCloseReviewModal}
       onAddReview={onAddReview}
+      onEditReview={onEditReview}
       onToggleHelpful={onToggleHelpful}
     />
   )

@@ -123,7 +123,7 @@ export function useMyRecipesPage() {
           style: 'destructive',
           onPress: async () => {
             try {
-              await recipesService.delete(recipe.id)
+              await recipesService.delete(parseInt(recipe.id))
 
               // Remover da lista localmente
               setRecipes((prev) => prev.filter((r) => r.id !== recipe.id))
@@ -149,7 +149,7 @@ export function useMyRecipesPage() {
 
   // Voltar para o perfil
   const goBack = useCallback(() => {
-    router.back()
+    router.replace('/profile')
   }, [router])
 
   // Recarregar receitas

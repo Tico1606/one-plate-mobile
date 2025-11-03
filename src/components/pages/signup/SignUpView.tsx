@@ -40,7 +40,7 @@ export function SignUpView({
       className='flex-1'
     >
       <ScrollView className='flex-1 bg-gray-100'>
-        <Box className='flex-1 px-8 py-16'>
+        <Box className='flex-1 px-8 py-24'>
           <VStack space='lg' className='flex-1'>
             {/* Logo */}
             <VStack space='sm' className='items-center my-12'>
