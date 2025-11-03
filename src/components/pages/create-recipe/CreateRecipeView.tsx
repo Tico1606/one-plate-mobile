@@ -19,9 +19,12 @@ import { useCreateRecipe } from './useCreateRecipe'
 export function CreateRecipeView() {
   const {
     formData,
-    isLoading,
+    isPublishing,
+    isSavingDraft,
     categories,
     categoriesLoading,
+    validationErrors,
+    ingredientErrors,
     loadCategories,
     updateField,
     addIngredient,
@@ -62,7 +65,7 @@ export function CreateRecipeView() {
     <Box className='flex-1 bg-zinc-100'>
       {/* Header */}
       <Header
-        isLoading={isLoading}
+        isLoading={isPublishing || isSavingDraft}
         onNotificationPress={() => {
           // TODO: Implementar notificações
         }}
@@ -74,24 +77,31 @@ export function CreateRecipeView() {
         contentContainerStyle={{ flexGrow: 1 }}
       >
         <VStack className='px-6 space-y-6'>
-          {/* Título da página */}
-          <HStack className='items-center justify-center mb-4'>
-            <Text className='text-2xl font-extrabold text-purple-500 pb-1'>
-              Nova Receita
-            </Text>
-          </HStack>
+          {/* Erro geral */}
+          {validationErrors.general && (
+            <Card className='p-4 bg-red-50 border-red-200' variant='ghost'>
+              <Text className='text-red-600 text-center font-medium'>
+                {validationErrors.general}
+              </Text>
+            </Card>
+          )}
 
           {/* Título */}
           <Card className='p-4 bg-white rounded-t-lg' variant='ghost'>
             <VStack className='space-y-2'>
               <Text className='font-medium text-gray-700 py-1'>Título</Text>
-              <Input className='bg-gray-50 border-gray-200'>
+              <Input
+                className={`bg-gray-50 ${validationErrors.title ? 'border-red-500' : 'border-gray-200'}`}
+              >
                 <InputField
                   value={formData.title}
                   onChangeText={(value: string) => updateField('title', value)}
                   placeholder='Qual o nome de sua receita?'
                 />
               </Input>
+              {validationErrors.title && (
+                <Text className='text-red-500 text-sm'>{validationErrors.title}</Text>
+              )}
             </VStack>
           </Card>
 
@@ -147,7 +157,9 @@ export function CreateRecipeView() {
               <HStack className='space-x-4 gap-4'>
                 <VStack className='flex-1 space-y-2'>
                   <Text className='font-medium text-gray-700 py-1'>Preparo em (min)</Text>
-                  <Input className='bg-gray-50 border-gray-200'>
+                  <Input
+                    className={`bg-gray-50 ${validationErrors.preparationTime ? 'border-red-500' : 'border-gray-200'}`}
+                  >
                     <InputField
                       value={
                         formData.preparationTime === 0
@@ -161,11 +173,18 @@ export function CreateRecipeView() {
                       keyboardType='numeric'
                     />
                   </Input>
+                  {validationErrors.preparationTime && (
+                    <Text className='text-red-500 text-sm'>
+                      {validationErrors.preparationTime}
+                    </Text>
+                  )}
                 </VStack>
 
                 <VStack className='flex-1 space-y-2'>
                   <Text className='font-medium text-gray-700 py-1'>Porções</Text>
-                  <Input className='bg-gray-50 border-gray-200'>
+                  <Input
+                    className={`bg-gray-50 ${validationErrors.servings ? 'border-red-500' : 'border-gray-200'}`}
+                  >
                     <InputField
                       value={formData.servings === 0 ? '' : formData.servings.toString()}
                       onChangeText={(value: string) =>
@@ -175,6 +194,11 @@ export function CreateRecipeView() {
                       keyboardType='numeric'
                     />
                   </Input>
+                  {validationErrors.servings && (
+                    <Text className='text-red-500 text-sm'>
+                      {validationErrors.servings}
+                    </Text>
+                  )}
                 </VStack>
               </HStack>
             </VStack>
@@ -280,6 +304,11 @@ export function CreateRecipeView() {
                   </TouchableOpacity>
                 ))}
               </Box>
+              {validationErrors.categoryIds && (
+                <Text className='text-red-500 text-sm'>
+                  {validationErrors.categoryIds}
+                </Text>
+              )}
             </VStack>
           </Card>
 
@@ -308,6 +337,7 @@ export function CreateRecipeView() {
                       onUpdate={updateIngredient}
                       onRemove={removeIngredient}
                       canRemove={formData.ingredients.length > 1}
+                      errors={ingredientErrors[index]}
                     />
                   ))
                 ) : (
@@ -316,6 +346,11 @@ export function CreateRecipeView() {
                   </Text>
                 )}
               </VStack>
+              {validationErrors.ingredients && (
+                <Text className='text-red-500 text-sm'>
+                  {validationErrors.ingredients}
+                </Text>
+              )}
             </VStack>
           </Card>
 
@@ -352,6 +387,11 @@ export function CreateRecipeView() {
                   </Text>
                 )}
               </VStack>
+              {validationErrors.instructions && (
+                <Text className='text-red-500 text-sm'>
+                  {validationErrors.instructions}
+                </Text>
+              )}
             </VStack>
           </Card>
 
@@ -370,8 +410,8 @@ export function CreateRecipeView() {
               </HStack>
 
               <VStack className='space-y-4'>
-                {formData.images.length > 0 ? (
-                  formData.images.map((image, index) => (
+                {(formData.images || []).length > 0 ? (
+                  (formData.images || []).map((image, index) => (
                     <ImageInput
                       // biome-ignore lint/suspicious/noArrayIndexKey: a
                       key={index}
@@ -379,7 +419,7 @@ export function CreateRecipeView() {
                       index={index}
                       onUpdate={updateImage}
                       onRemove={removeImage}
-                      canRemove={formData.images.length > 1}
+                      canRemove={(formData.images || []).length > 1}
                     />
                   ))
                 ) : (
@@ -409,41 +449,73 @@ export function CreateRecipeView() {
           <VStack className='space-y-3 py-6 gap-2'>
             <Button
               onPress={saveRecipe}
-              disabled={isLoading}
-              className='bg-purple-500 p-1 rounded-xl'
+              disabled={isPublishing || isSavingDraft}
+              className={`p-1 rounded-xl ${
+                isPublishing
+                  ? 'bg-purple-600'
+                  : 'bg-purple-500 hover:bg-purple-600'
+              }`}
             >
-              {isLoading ? (
-                <HStack className='items-center space-x-2'>
-                  <ActivityIndicator size='small' color='white' />
-                  <Text className='text-white font-semibold'>Salvando...</Text>
+              {isPublishing ? (
+                <HStack className='items-center space-x-3 gap-3'>
+                  <ActivityIndicator
+                    size='small'
+                    color='white'
+                  />
+                  <Text className='text-white font-semibold text-lg tracking-normal'>
+                    Publicando...
+                  </Text>
                 </HStack>
               ) : (
-                <Text className='text-white font-medium text-lg tracking-normal'>
-                  Publicar Receita
-                </Text>
+                <HStack className='items-center space-x-2 gap-2'>
+                  <Ionicons name='cloud-upload-outline' size={20} color='white' />
+                  <Text className='text-white font-medium text-lg tracking-normal'>
+                    Publicar Receita
+                  </Text>
+                </HStack>
               )}
             </Button>
 
             <Button
               onPress={saveRecipeAsDraft}
-              disabled={isLoading}
+              disabled={isPublishing || isSavingDraft}
               variant='outline'
-              className='border-purple-400 rounded-xl'
+              className={`border-purple-400 rounded-xl ${
+                isSavingDraft
+                  ? 'border-purple-500 bg-purple-50'
+                  : 'hover:border-purple-500 hover:bg-purple-50'
+              }`}
             >
-              <HStack className='items-center space-x-2 gap-2'>
-                <Ionicons name='document-text-outline' size={16} color='#a855f7' />
-                <Text className='text-purple-500 font-medium text-lg tracking-normal'>
-                  Salvar como Rascunho
-                </Text>
-              </HStack>
+              {isSavingDraft ? (
+                <HStack className='items-center space-x-3 gap-3'>
+                  <ActivityIndicator
+                    size='small'
+                    color='#a855f7'
+                  />
+                  <Text className='text-purple-500 font-medium text-lg tracking-normal'>
+                    Salvando...
+                  </Text>
+                </HStack>
+              ) : (
+                <HStack className='items-center space-x-2 gap-2'>
+                  <Ionicons name='document-text-outline' size={18} color='#a855f7' />
+                  <Text className='text-purple-500 font-medium text-lg tracking-normal'>
+                    Salvar como Rascunho
+                  </Text>
+                </HStack>
+              )}
             </Button>
 
             <Button
               onPress={clearForm}
+              disabled={isPublishing || isSavingDraft}
               variant='outline'
-              className='border-gray-300 rounded-xl'
+              className='border-gray-300 rounded-xl hover:border-gray-400 hover:bg-gray-50'
             >
-              <Text className='text-gray-700 font-medium'>Limpar</Text>
+              <HStack className='items-center space-x-2 gap-2'>
+                <Ionicons name='refresh-outline' size={16} color='#6b7280' />
+                <Text className='text-gray-700 font-medium'>Limpar</Text>
+              </HStack>
             </Button>
           </VStack>
         </VStack>

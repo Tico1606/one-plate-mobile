@@ -17,6 +17,11 @@ interface IngredientInputProps {
   onUpdate: (index: number, field: keyof Ingredient, value: string) => void
   onRemove: (index: number) => void
   canRemove: boolean
+  errors?: {
+    name?: string
+    amount?: string
+    unit?: string
+  }
 }
 
 export function IngredientInput({
@@ -25,6 +30,7 @@ export function IngredientInput({
   onUpdate,
   onRemove,
   canRemove,
+  errors,
 }: IngredientInputProps) {
   return (
     <VStack className='space-y-3'>
@@ -45,20 +51,25 @@ export function IngredientInput({
         {/* Nome do ingrediente */}
         <VStack className='space-y-1'>
           <Text className='font-medium text-gray-600 pb-1'>Nome</Text>
-          <Input className='bg-gray-50 border-gray-200'>
+          <Input
+            className={`bg-gray-50 ${errors?.name ? 'border-red-500' : 'border-gray-200'}`}
+          >
             <InputField
               value={ingredient.name}
               onChangeText={(value: string) => onUpdate(index, 'name', value)}
               placeholder='Ex: Macarrão'
             />
           </Input>
+          {errors?.name && <Text className='text-red-500 text-sm'>{errors.name}</Text>}
         </VStack>
 
         {/* Quantidade e Unidade */}
         <HStack className='space-x-3 py-1 gap-4'>
           <VStack className='flex-1 space-y-1'>
             <Text className='font-medium text-gray-600 py-1'>Quantidade</Text>
-            <Input className='bg-gray-50 border-gray-200'>
+            <Input
+              className={`bg-gray-50 ${errors?.amount ? 'border-red-500' : 'border-gray-200'}`}
+            >
               <InputField
                 value={ingredient.amount}
                 onChangeText={(value: string) => onUpdate(index, 'amount', value)}
@@ -66,16 +77,22 @@ export function IngredientInput({
                 keyboardType='numeric'
               />
             </Input>
+            {errors?.amount && (
+              <Text className='text-red-500 text-sm'>{errors.amount}</Text>
+            )}
           </VStack>
           <VStack className='flex-1 space-y-1'>
             <Text className='font-medium text-gray-600 py-1'>Unidade</Text>
-            <Input className='bg-gray-50 border-gray-200'>
+            <Input
+              className={`bg-gray-50 ${errors?.unit ? 'border-red-500' : 'border-gray-200'}`}
+            >
               <InputField
                 value={ingredient.unit}
                 onChangeText={(value: string) => onUpdate(index, 'unit', value)}
                 placeholder='Ex: g'
               />
             </Input>
+            {errors?.unit && <Text className='text-red-500 text-sm'>{errors.unit}</Text>}
           </VStack>
         </HStack>
       </VStack>

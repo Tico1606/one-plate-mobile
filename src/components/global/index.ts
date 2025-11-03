@@ -1,4 +1,5 @@
 export { CategoryFilter } from './CategoryFilter'
 export { Header } from './Header'
 export { SearchBar } from './SearchBar'
+export { StarRating } from './StarRating'
 export { default as TabNavigation } from './TabNavigation'
