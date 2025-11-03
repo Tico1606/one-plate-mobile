@@ -21,6 +21,7 @@ interface HomeViewProps {
   recipes: Recipe[]
   isLoading: boolean
   searchQuery?: string
+  unreadNotificationsCount?: number
 
   // Handlers
   onRetry: () => void
@@ -36,14 +37,13 @@ interface HomeViewProps {
 }
 
 export function HomeView({
-  browseCategories,
   recipes,
   isLoading,
   searchQuery,
+  unreadNotificationsCount = 0,
   onRetry,
   onSearchPress,
   onNotificationPress,
-  onCategoryPress,
   onRecipePress,
   onViewAllRecipes,
   onRecipeLike,
@@ -75,7 +75,11 @@ export function HomeView({
         }
       >
         {/* Header */}
-        <Header isLoading={isLoading} onNotificationPress={onNotificationPress} />
+        <Header
+          isLoading={isLoading}
+          unreadCount={unreadNotificationsCount}
+          onNotificationPress={onNotificationPress}
+        />
 
         {/* Search Bar */}
         <SearchBar
@@ -86,30 +90,6 @@ export function HomeView({
           onSearchChange={onAutoSearch}
           debounceMs={800}
         />
-
-        {/* Browse by Category */}
-        <VStack className='px-6 mb-4'>
-          <Text className='text-xl font-bold text-gray-900 mb-4'>
-            Navegar por Categoria
-          </Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <HStack className='space-x-4 pt-4 gap-6'>
-              {browseCategories.map((category) => (
-                <TouchableOpacity
-                  key={category.id}
-                  className='items-center min-w-[100px]'
-                  onPress={() => onCategoryPress(category)}
-                >
-                  <Box className='w-24 h-16 bg-white-100 rounded-lg items-center justify-center mb-2 border-2 border-purple-400'>
-                    <Text className='text-sm font-semibold text-center px-2 text-purple-500'>
-                      {category.name}
-                    </Text>
-                  </Box>
-                </TouchableOpacity>
-              ))}
-            </HStack>
-          </ScrollView>
-        </VStack>
 
         {/* Recent Recipes */}
         <VStack className='px-6 my-4'>

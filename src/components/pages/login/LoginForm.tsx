@@ -4,8 +4,6 @@ import { Controller, useForm } from 'react-hook-form'
 import { TextInput } from 'react-native'
 
 import { Button, ButtonText } from '@/components/ui/button'
-import { HStack } from '@/components/ui/hstack'
-import { Pressable } from '@/components/ui/pressable'
 import { Text } from '@/components/ui/text'
 import { VStack } from '@/components/ui/vstack'
 import { type LoginFormData, loginSchema } from '@/lib/validations/auth'
@@ -14,9 +12,15 @@ interface LoginFormProps {
   isLoading: boolean
   onSignIn: (data: LoginFormData) => Promise<void>
   onSignInWithGoogle: () => Promise<void>
+  onForgotPassword: () => void
 }
 
-export function LoginForm({ isLoading, onSignIn, onSignInWithGoogle }: LoginFormProps) {
+export function LoginForm({
+  isLoading,
+  onSignIn,
+  onSignInWithGoogle,
+  onForgotPassword,
+}: LoginFormProps) {
   const loginForm = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
     defaultValues: {
@@ -85,11 +89,14 @@ export function LoginForm({ isLoading, onSignIn, onSignInWithGoogle }: LoginForm
           </ButtonText>
         </Button>
 
-        <Pressable className='items-center'>
-          <Text className='text-gray-600 text-sm text-center mt-4'>
-            Esqueceu a senha?
-          </Text>
-        </Pressable>
+        <Button
+          onPress={onForgotPassword}
+          className='bg-gray-100 rounded-lg mt-2'
+          variant='outline'
+          isDisabled={isLoading}
+        >
+          <ButtonText className='text-gray-500 font-medium'>Esqueceu a senha?</ButtonText>
+        </Button>
       </VStack>
 
       {/* Separator e Google Sign In */}

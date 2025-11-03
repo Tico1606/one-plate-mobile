@@ -32,6 +32,7 @@ interface FavoritesViewProps {
   sortBy: SortOption
   sortDirection: SortDirection
   isDropdownOpen: boolean
+  unreadNotificationsCount?: number
 
   // Estados
   isLoading: boolean
@@ -54,6 +55,7 @@ export function FavoritesView({
   sortBy,
   sortDirection,
   isDropdownOpen,
+  unreadNotificationsCount = 0,
   isLoading,
   onRetry,
   onSearchPress,
@@ -89,7 +91,11 @@ export function FavoritesView({
         }
       >
         {/* Header */}
-        <Header isLoading={isLoading} onNotificationPress={onNotificationPress} />
+        <Header
+          isLoading={isLoading}
+          unreadCount={unreadNotificationsCount}
+          onNotificationPress={onNotificationPress}
+        />
 
         {/* Search Bar */}
         <SearchBar
@@ -114,6 +120,7 @@ export function FavoritesView({
                   <TouchableOpacity
                     className='w-8 h-8 bg-white rounded-lg items-center justify-center border border-gray-200'
                     onPress={onSortDirectionToggle}
+                    activeOpacity={1.0}
                   >
                     <Ionicons
                       name={sortDirection === 'asc' ? 'arrow-up' : 'arrow-down'}
@@ -126,6 +133,7 @@ export function FavoritesView({
                   <TouchableOpacity
                     className='flex-row items-center space-x-1 px-3 py-2 bg-white rounded-lg gap-1'
                     onPress={onDropdownToggle}
+                    activeOpacity={1.0}
                   >
                     <Text className='text-sm font-medium text-gray-700'>
                       {SORT_OPTIONS.find((option) => option.value === sortBy)?.label ||

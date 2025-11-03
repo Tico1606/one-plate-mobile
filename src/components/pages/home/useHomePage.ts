@@ -1,7 +1,13 @@
+import { useFocusEffect } from '@react-navigation/native'
 import { useRouter } from 'expo-router'
 import { useCallback, useState } from 'react'
 import { useFavorites } from '@/contexts'
-import { useInfiniteRecipes, useRecentRecipes, useRecipeSearch } from '@/hooks'
+import {
+  useInfiniteRecipes,
+  useNotificationBadge,
+  useRecentRecipes,
+  useRecipeSearch,
+} from '@/hooks'
 import { useCategories } from '@/hooks/useCategories'
 import type { Category, Recipe } from '@/types/api'
 
@@ -14,16 +20,12 @@ export function useHomePage() {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(null)
 
   // Hooks para buscar dados
-  const {
-    data: categories,
-    loading: categoriesLoading,
-    refetch: refetchCategories,
-  } = useCategories()
+  const { loading: categoriesLoading, refetch: refetchCategories } = useCategories()
   const {
     data: recentRecipes,
     loading: recentLoading,
     refetch: refetchRecent,
-  } = useRecentRecipes(4)
+  } = useRecentRecipes(7)
   // const {
   //   data: popularRecipes,
   //   loading: popularLoading,
@@ -53,6 +55,17 @@ export function useHomePage() {
     loading: favoritesLoading,
   } = useFavorites()
 
+  // Hook para contador de notificações
+  const { unreadCount } = useNotificationBadge()
+
+  // Recarregar receitas quando a tela entrar em foco
+  useFocusEffect(
+    useCallback(() => {
+      refetchRecent()
+      refetchCategories()
+    }, [refetchRecent, refetchCategories]),
+  )
+
   // Determinar quais receitas mostrar
   const getDisplayRecipes = () => {
     if (searchQuery.trim()) {
@@ -67,7 +80,6 @@ export function useHomePage() {
   }
 
   // Usar dados da API com verificação de segurança
-  const browseCategories = Array.isArray(categories) ? categories : []
   const recipes = getDisplayRecipes()
 
   // Estados de loading
@@ -91,13 +103,8 @@ export function useHomePage() {
   }, [])
 
   const handleNotificationPress = useCallback(() => {
-    // TODO: Implementar notificações
-  }, [])
-
-  const handleCategoryPress = useCallback((category: Category) => {
-    setSelectedCategory(category)
-    setSearchQuery('') // Limpar busca quando selecionar categoria
-  }, [])
+    router.push('/(auth)/notifications')
+  }, [router])
 
   const handleRecipePress = useCallback(
     (recipe: Recipe) => {
@@ -149,12 +156,12 @@ export function useHomePage() {
 
   return {
     // Dados
-    browseCategories,
     recipes,
     popularRecipes: [],
     favoriteRecipes: Array.isArray(favoriteRecipes) ? favoriteRecipes : [],
     searchQuery,
     selectedCategory,
+    unreadNotificationsCount: unreadCount,
 
     // Estados de loading
     isLoading,
@@ -170,7 +177,6 @@ export function useHomePage() {
     onSearchPress: handleSearchPress,
     onFilterPress: handleFilterPress,
     onNotificationPress: handleNotificationPress,
-    onCategoryPress: handleCategoryPress,
     onRecipePress: handleRecipePress,
     onViewAllRecipes: handleViewAllRecipes,
     onRecipeLike: handleRecipeLike,

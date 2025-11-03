@@ -1,16 +1,20 @@
-import { useSignIn } from '@clerk/clerk-expo'
+import { useOAuth, useSignIn } from '@clerk/clerk-expo'
+import * as LinkingExpo from 'expo-linking'
 import { useRouter } from 'expo-router'
 import { useState } from 'react'
 import { Alert } from 'react-native'
 
+import { useCreateUserBackend } from '@/hooks'
 import type { LoginFormData, VerifyCodeFormData } from '@/lib/validations/auth'
 
 export function useLoginPage() {
   const { signIn, setActive, isLoaded } = useSignIn()
+  const { startOAuthFlow } = useOAuth({ strategy: 'oauth_google' })
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [showCodeVerification, setShowCodeVerification] = useState(false)
   const [userEmail, setUserEmail] = useState('')
+  const { createUserInBackend } = useCreateUserBackend()
 
   // novo: guarda qual estratégia o sign-in exige
   const [secondFactorStrategy, setSecondFactorStrategy] = useState<
@@ -18,8 +22,8 @@ export function useLoginPage() {
   >(null)
   const [phoneNumberId, setPhoneNumberId] = useState<string | null>(null)
 
-  const safeErrMsg = (err: any) =>
-    err?.errors?.[0]?.longMessage ?? err?.message ?? 'Erro desconhecido'
+  // const safeErrMsg = (err: any) =>
+  //   err?.errors?.[0]?.longMessage ?? err?.message ?? 'Erro desconhecido'
 
   const onSignIn = async (data: LoginFormData) => {
     if (!isLoaded || !signIn) return
@@ -74,12 +78,12 @@ export function useLoginPage() {
         await setActive({ session: result.createdSessionId })
         router.replace('/(auth)/home' as any)
       } else {
-        console.error('Sign in não finalizado', result)
-        Alert.alert('Erro', 'Fluxo de login não finalizado.')
+        // console.error('Sign in não finalizado', result)
+        Alert.alert('Erro', 'Fluxo de login não finalizado. Por favor, tente novamente.')
       }
-    } catch (err: any) {
-      console.error('Error:', err)
-      Alert.alert('Erro', safeErrMsg(err))
+    } catch {
+      // console.error('Error:', err)
+      Alert.alert('Erro', 'Senha ou email incorretos. Por favor, tente novamente.')
     } finally {
       setIsLoading(false)
     }
@@ -118,9 +122,9 @@ export function useLoginPage() {
       } else {
         Alert.alert('Erro', 'Nenhuma estratégia de 2FA selecionada.')
       }
-    } catch (err: any) {
-      console.error('Error:', err)
-      Alert.alert('Erro', safeErrMsg(err))
+    } catch {
+      // console.error('Error:', err)
+      Alert.alert('Erro', 'Erro ao reenviar código. Por favor, tente novamente.')
     } finally {
       setIsLoading(false)
     }
@@ -149,64 +153,57 @@ export function useLoginPage() {
       } else {
         Alert.alert('Erro', 'Nenhuma estratégia de 2FA ativa para reenviar código.')
       }
-    } catch (err: any) {
-      console.error('Error:', err)
-      Alert.alert('Erro', safeErrMsg(err))
+    } catch {
+      // console.error('Error:', err)
+      Alert.alert('Erro', 'Erro ao reenviar código. Por favor, tente novamente.')
     } finally {
       setIsLoading(false)
     }
   }
 
   const onSignInWithGoogle = async () => {
-    if (!isLoaded || !signIn) return
+    if (!isLoaded) return
+    const redirectUrl = LinkingExpo.createURL('/(auth)/home')
 
     try {
       setIsLoading(true)
-      const result = await signIn.create({
-        strategy: 'oauth_google',
-        redirectUrl: '/sso-callback', // em mobile, verifique se precisa ser um deep link absoluto
+      console.log('🔄 [LOGIN-OAUTH] Iniciando login com Google...')
+
+      const result = await startOAuthFlow({
+        redirectUrl,
       })
+      console.log('✅ [LOGIN-OAUTH] Resultado do OAuth:', result)
 
-      if (result.status === 'complete') {
-        await setActive({ session: result.createdSessionId })
-        router.replace('/(auth)/home' as any)
-        return
-      }
+      if (result.createdSessionId) {
+        console.log('✅ [LOGIN-OAUTH] Sessão criada com sucesso')
 
-      // se precisar 2FA depois do SSO, reaplica a mesma lógica de cima
-      if (result.status === 'needs_second_factor') {
-        const supported = (result.supportedSecondFactors ?? []) as any[]
-        const phoneEntry = supported.find((s) => s.strategy === 'phone_code')
-        const totpEntry = supported.find((s) => s.strategy === 'totp')
+        // Aguardar mais tempo para garantir que o Clerk processou completamente a sessão
+        await new Promise((resolve) => setTimeout(resolve, 2000))
 
-        if (phoneEntry) {
-          setSecondFactorStrategy('phone_code')
-          setPhoneNumberId(phoneEntry.phoneNumberId ?? null)
-          await signIn.prepareSecondFactor({
-            strategy: 'phone_code',
-            ...(phoneEntry.phoneNumberId
-              ? { phoneNumberId: phoneEntry.phoneNumberId }
-              : {}),
-          })
-          setShowCodeVerification(true)
-          Alert.alert('Código enviado', 'Enviamos um código via SMS para seu telefone.')
-        } else if (totpEntry) {
-          setSecondFactorStrategy('totp')
-          setShowCodeVerification(true)
-          Alert.alert(
-            'Autenticação em 2 passos',
-            'Abra seu app autenticador (Google Authenticator, Authy, etc.) e insira o código gerado.',
-          )
-        } else {
-          Alert.alert(
-            'Erro',
-            'Segundo fator requerido, mas nenhum método suportado foi encontrado.',
-          )
+        // Criar usuário no backend após OAuth login (caso seja um novo usuário)
+        try {
+          await createUserInBackend()
+          console.log('✅ [LOGIN-OAUTH] Usuário criado no backend')
+        } catch (error) {
+          console.error('❌ [LOGIN-OAUTH] Erro ao criar usuário no backend:', error)
+          // Não bloquear o fluxo se falhar a criação no backend
         }
+
+        console.log(
+          '🔄 [LOGIN-OAUTH] Aguardando estabilização da sessão antes de redirecionar...',
+        )
+        // Aguardar mais um pouco para garantir que o estado isSignedIn seja atualizado
+        await new Promise((resolve) => setTimeout(resolve, 1000))
+
+        console.log('🔄 [LOGIN-OAUTH] Redirecionando para home...')
+        router.replace('/(auth)/home' as any)
+      } else {
+        console.log('❌ [LOGIN-OAUTH] Falha ao criar sessão')
+        Alert.alert('Erro', 'Não foi possível fazer login com Google')
       }
-    } catch (err: any) {
-      console.error('Error:', err)
-      Alert.alert('Erro', safeErrMsg(err))
+    } catch {
+      // console.error('❌ [LOGIN-OAUTH] Erro no login com Google:', err)
+      Alert.alert('Erro', 'Não foi possível fazer login com Google. Tente novamente.')
     } finally {
       setIsLoading(false)
     }
@@ -214,6 +211,10 @@ export function useLoginPage() {
 
   const onNavigateToSignUp = () => {
     router.replace('/(public)/signup' as any)
+  }
+
+  const onForgotPassword = () => {
+    router.push('/(public)/forgot-password' as any)
   }
 
   return {
@@ -225,5 +226,6 @@ export function useLoginPage() {
     onResendCode,
     onSignInWithGoogle,
     onNavigateToSignUp,
+    onForgotPassword,
   }
 }

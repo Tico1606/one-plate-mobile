@@ -22,6 +22,7 @@ interface LoginViewProps {
   onResendCode: () => Promise<void>
   onSignInWithGoogle: () => Promise<void>
   onNavigateToSignUp: () => void
+  onForgotPassword: () => void
 }
 
 export function LoginView({
@@ -33,6 +34,7 @@ export function LoginView({
   onResendCode,
   onSignInWithGoogle,
   onNavigateToSignUp,
+  onForgotPassword,
 }: LoginViewProps) {
   return (
     <KeyboardAvoidingView
@@ -40,7 +42,7 @@ export function LoginView({
       className='flex-1'
     >
       <ScrollView className='flex-1 bg-gray-100'>
-        <Box className='flex-1 px-8 py-16'>
+        <Box className='flex-1 px-8 py-24'>
           <VStack space='lg' className='flex-1'>
             {/* Logo */}
             <VStack space='sm' className='items-center my-12'>
@@ -68,6 +70,7 @@ export function LoginView({
                 isLoading={isLoading}
                 onSignIn={onSignIn}
                 onSignInWithGoogle={onSignInWithGoogle}
+                onForgotPassword={onForgotPassword}
               />
             )}
 

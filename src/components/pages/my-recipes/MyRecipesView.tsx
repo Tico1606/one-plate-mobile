@@ -91,7 +91,7 @@ export function MyRecipesView({
         }
       >
         {/* Header da página */}
-        <VStack className=' py-4'>
+        <VStack className=''>
           <HStack className='items-center justify-between px-6 mb-4'>
             <HStack className='items-center space-x-3 gap-2'>
               <TouchableOpacity onPress={goBack}>
