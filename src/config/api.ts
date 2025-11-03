@@ -23,6 +23,15 @@ export const API_CONFIG = {
       PROFILE: '/user/profile',
       UPDATE: '/user/profile',
     },
+    SHOPPING_LIST: {
+      LIST: '/shopping-list',
+      ADD_ITEM: '/shopping-list/items',
+      UPDATE_ITEM: '/shopping-list/items/:itemId',
+      TOGGLE_ITEM: '/shopping-list/items/:itemId/toggle',
+      REMOVE_ITEM: '/shopping-list/items/:itemId',
+      CLEAR_ALL: '/shopping-list',
+      CLEAR_PURCHASED: '/shopping-list/checked-items',
+    },
   },
 } as const
 
