@@ -7,8 +7,9 @@ import { useEffect, useState } from 'react'
 import { Box } from '@/components/ui/box'
 import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider'
 import { Text } from '@/components/ui/text'
-import { FavoritesProvider } from '@/contexts'
+import { FavoritesProvider, ShoppingListProvider } from '@/contexts'
 import { useAuthToken } from '@/hooks/useAuthToken'
+import { usePushNotifications } from '@/hooks/usePushNotifications'
 import { ClerkProvider, clerkConfig } from '@/lib/clerk'
 import '@/styles/global.css'
 
@@ -20,9 +21,13 @@ const InitialLayout = () => {
   const { isLoaded, isSignedIn } = useAuth()
   const segments = useSegments()
   const router = useRouter()
+  const [hasRedirected, setHasRedirected] = useState(false)
 
   // Sincronizar token do Clerk com AsyncStorage
   useAuthToken()
+
+  // Inicializar push notifications
+  usePushNotifications()
 
   useEffect(() => {
     if (!isLoaded) return
@@ -31,16 +36,38 @@ const InitialLayout = () => {
     const inPublicGroup = segments[0] === '(public)'
     const isSSOCallback = segments[0] === 'sso-callback'
 
-    if (isSSOCallback) {
-      return
-    }
+    console.log('🔍 [LAYOUT] Estado atual:', {
+      isLoaded,
+      isSignedIn,
+      segments: segments.join('/'),
+      inAuthGroup,
+      inPublicGroup,
+      isSSOCallback,
+    })
 
-    if (isSignedIn && !inAuthGroup) {
-      router.replace('/(auth)/home' as any)
-    } else if (!isSignedIn && !inPublicGroup) {
-      router.replace('/(public)/login' as any)
-    }
-  }, [isLoaded, isSignedIn, segments, router])
+    if (isSSOCallback) return
+
+    // Aguardar um pouco mais para garantir que o estado de autenticação seja atualizado
+    const timeoutId = setTimeout(() => {
+      if (isSignedIn && !inAuthGroup && !hasRedirected) {
+        console.log(
+          '✅ [LAYOUT] Usuário logado mas não está na área auth, redirecionando para home...',
+        )
+        setHasRedirected(true)
+        router.replace('/(auth)/home' as any)
+      } else if (!isSignedIn && !inPublicGroup && !hasRedirected) {
+        console.log(
+          '❌ [LAYOUT] Usuário não logado e não está na área pública, redirecionando para login...',
+        )
+        setHasRedirected(true)
+        router.replace('/(public)/login' as any)
+      } else {
+        console.log('✅ [LAYOUT] Estado correto, mantendo usuário na tela atual')
+      }
+    }, 200) // Aumentar delay para garantir sincronização
+
+    return () => clearTimeout(timeoutId)
+  }, [isLoaded, isSignedIn, segments, router, hasRedirected])
 
   if (!isLoaded) {
     return (
@@ -75,9 +102,15 @@ export default function RootLayout() {
         <ClerkProvider
           publishableKey={clerkConfig?.publishableKey}
           tokenCache={clerkConfig.tokenCache}
+          // signInUrl={clerkConfig.signInUrl}
+          // signUpUrl={clerkConfig.signUpUrl}
+          // afterSignInUrl={clerkConfig.afterSignInUrl}
+          // afterSignUpUrl={clerkConfig.afterSignUpUrl}
         >
           <FavoritesProvider>
-            <InitialLayout />
+            <ShoppingListProvider>
+              <InitialLayout />
+            </ShoppingListProvider>
           </FavoritesProvider>
         </ClerkProvider>
       </GluestackUIProvider>
