@@ -9,6 +9,7 @@ import { Box } from '@/components/ui/box'
 import { Card } from '@/components/ui/card'
 import { HStack } from '@/components/ui/hstack'
 import { Text } from '@/components/ui/text'
+import { useLocale } from '@/contexts'
 import { VStack } from '@/components/ui/vstack'
 import { useNotificationPermissions } from '@/hooks/useNotificationPermissions'
 import type { Notification } from '@/types/api'
@@ -36,13 +37,14 @@ export function NotificationsView({
   onGoBack,
 }: NotificationsViewProps) {
   const { hasPermission, requestPermission } = useNotificationPermissions()
+  const { t } = useLocale()
 
   // Loading state
   if (isLoading) {
     return (
       <Box className='flex-1 bg-zinc-100 justify-center items-center'>
         <ActivityIndicator size='large' color='#8B5CF6' />
-        <Text className='mt-4 text-gray-600'>Carregando notificações...</Text>
+        <Text className='mt-4 text-gray-600'>{t('common.loading')}</Text>
       </Box>
     )
   }

@@ -14,6 +14,7 @@ import { HStack } from '@/components/ui/hstack'
 import { Text } from '@/components/ui/text'
 import { VStack } from '@/components/ui/vstack'
 import type { Recipe } from '@/types/api'
+import { useLocale } from '@/contexts'
 import type { SortDirection, SortOption } from './useFavoritesPage'
 
 // Constante para opções de ordenação
@@ -67,12 +68,13 @@ export function FavoritesView({
   onSortDirectionToggle,
   onDropdownToggle,
 }: FavoritesViewProps) {
+  const { t } = useLocale()
   // Loading state
   if (isLoading) {
     return (
       <Box className='flex-1 bg-zinc-100 justify-center items-center'>
         <ActivityIndicator size='large' color='#8B5CF6' />
-        <Text className='mt-4 text-gray-600'>Carregando favoritos...</Text>
+        <Text className='mt-4 text-gray-600'>{t('favorites.loading')}</Text>
       </Box>
     )
   }
@@ -99,7 +101,7 @@ export function FavoritesView({
 
         {/* Search Bar */}
         <SearchBar
-          placeholder='Buscar receitas favoritas por nome, ingredientes...'
+          placeholder={t('search.favorites_placeholder')}
           value={searchQuery}
           onChangeText={onSearchChange || (() => {})}
           onSearchPress={onSearchPress}
@@ -110,7 +112,7 @@ export function FavoritesView({
         {/* Favorites List */}
         <VStack className='px-6 my-4'>
           <HStack className='justify-between items-center mb-4'>
-            <Text className='text-xl font-bold text-gray-900'>Receitas Favoritas</Text>
+            <Text className='text-xl font-bold text-gray-900'>{t('favorites.title')}</Text>
 
             {/* Sort Selector */}
             <HStack className='items-center space-x-2 gap-4'>
@@ -187,14 +189,10 @@ export function FavoritesView({
               <Box className='items-center py-8'>
                 <Ionicons name='heart-outline' size={48} color='#9CA3AF' />
                 <Text className='mt-4 text-gray-500 text-center'>
-                  {searchQuery
-                    ? 'Nenhuma receita encontrada'
-                    : 'Nenhuma receita favoritada'}
+                  {t('favorites.no_results_title')}
                 </Text>
                 <Text className='text-sm text-gray-400 text-center mt-1'>
-                  {searchQuery
-                    ? 'Tente ajustar os filtros de busca'
-                    : 'Que tal favoritar algumas receitas?'}
+                  {t('favorites.no_results_subtitle')}
                 </Text>
               </Box>
             ) : (
@@ -215,7 +213,7 @@ export function FavoritesView({
                                 <Ionicons name='person' size={12} color='#3B82F6' />
                               </Box>
                               <Text className='text-xs text-gray-600 px-2'>
-                                by {recipe.author.name || 'Autor desconhecido'}
+                                {t('common.by')} {recipe.author.name || t('common.unknown_author')}
                               </Text>
                             </HStack>
                             <Text className='font-semibold text-gray-900'>

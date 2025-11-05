@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Alert } from 'react-native'
 import { useNotificationBadge } from '@/hooks/useNotificationBadge'
+import { useLocale } from '@/contexts'
 import { type EditProfileFormData, editProfileSchema } from '@/lib/validations/profile'
 import { type UserProfile, usersService } from '@/services/users'
 
@@ -31,15 +32,16 @@ export function useProfilePage() {
 
   // Hook para contador de notificações
   const { unreadCount } = useNotificationBadge()
+  const { locale, setLocale, t } = useLocale()
 
   const menuItems: MenuItem[] = useMemo(
     () => [
-      { id: 1, title: 'Minhas Receitas', icon: 'book', color: '#3B82F6' },
-      { id: 2, title: 'Lista de Compras', icon: 'basket', color: '#F59E0B' },
-      { id: 3, title: 'Configurações', icon: 'settings', color: '#6B7280' },
-      { id: 5, title: 'Sobre', icon: 'information-circle', color: '#8B5CF6' },
+      { id: 1, title: t('profile.menu.my_recipes'), icon: 'book', color: '#3B82F6' },
+      { id: 2, title: t('profile.menu.shopping_list'), icon: 'basket', color: '#F59E0B' },
+      { id: 3, title: t('profile.menu.change_language'), icon: 'language', color: '#6B7280' },
+      { id: 5, title: t('profile.menu.about'), icon: 'information-circle', color: '#8B5CF6' },
     ],
-    [],
+    [t, locale],
   )
 
   // Função para carregar perfil (reutilizável)
@@ -214,8 +216,14 @@ export function useProfilePage() {
       case 2: // Lista de Compras
         handleShoppingListPress()
         break
-      case 3: // Configurações
-        // TODO: Implementar navegação para configurações
+      case 3: // Trocar idioma
+        ;(async () => {
+          const next = locale === 'pt-BR' ? 'en' : 'pt-BR'
+          await setLocale(next)
+          Alert.alert(
+            next === 'pt-BR' ? t('profile.language_changed_pt') : t('profile.language_changed_en'),
+          )
+        })()
         break
       case 4: // Ajuda
         // TODO: Implementar navegação para ajuda

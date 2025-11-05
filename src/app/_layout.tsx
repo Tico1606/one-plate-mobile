@@ -7,7 +7,8 @@ import { useEffect, useState } from 'react'
 import { Box } from '@/components/ui/box'
 import { GluestackUIProvider } from '@/components/ui/gluestack-ui-provider'
 import { Text } from '@/components/ui/text'
-import { FavoritesProvider, ShoppingListProvider } from '@/contexts'
+import { useLocale } from '@/contexts'
+import { FavoritesProvider, ShoppingListProvider, LocaleProvider } from '@/contexts'
 import { useAuthToken } from '@/hooks/useAuthToken'
 import { usePushNotifications } from '@/hooks/usePushNotifications'
 import { ClerkProvider, clerkConfig } from '@/lib/clerk'
@@ -69,10 +70,11 @@ const InitialLayout = () => {
     return () => clearTimeout(timeoutId)
   }, [isLoaded, isSignedIn, segments, router, hasRedirected])
 
+  const { t } = useLocale()
   if (!isLoaded) {
     return (
       <Box className='flex-1 bg-zinc-50 justify-center items-center'>
-        <Text className='text-lg'>Carregando...</Text>
+        <Text className='text-lg'>{t('common.loading')}</Text>
       </Box>
     )
   }
@@ -99,6 +101,7 @@ export default function RootLayout() {
   return (
     <Box className='flex-1 bg-zinc-50'>
       <GluestackUIProvider mode={colorMode}>
+        <LocaleProvider>
         <ClerkProvider
           publishableKey={clerkConfig?.publishableKey}
           tokenCache={clerkConfig.tokenCache}
@@ -113,6 +116,7 @@ export default function RootLayout() {
             </ShoppingListProvider>
           </FavoritesProvider>
         </ClerkProvider>
+        </LocaleProvider>
       </GluestackUIProvider>
     </Box>
   )

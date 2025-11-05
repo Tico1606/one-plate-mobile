@@ -12,6 +12,7 @@ import { Box } from '@/components/ui/box'
 import { Card } from '@/components/ui/card'
 import { HStack } from '@/components/ui/hstack'
 import { Text } from '@/components/ui/text'
+import { useLocale } from '@/contexts'
 import { VStack } from '@/components/ui/vstack'
 import type { Recipe } from '@/types/api'
 
@@ -43,6 +44,7 @@ export function MyRecipesView({
   refreshRecipes,
   setSearchQuery,
 }: MyRecipesViewProps) {
+  const { t } = useLocale()
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'PUBLISHED':
@@ -69,7 +71,7 @@ export function MyRecipesView({
     return (
       <Box className='flex-1 bg-zinc-100 justify-center items-center'>
         <ActivityIndicator size='large' color='#8B5CF6' />
-        <Text className='mt-4 text-gray-600'>Carregando suas receitas...</Text>
+      <Text className='mt-4 text-gray-600'>{t('common.loading')}</Text>
       </Box>
     )
   }
@@ -97,7 +99,7 @@ export function MyRecipesView({
               <TouchableOpacity onPress={goBack}>
                 <Ionicons name='arrow-back' size={24} color='#374151' />
               </TouchableOpacity>
-              <Text className='text-2xl font-bold text-gray-900'>Minhas Receitas</Text>
+              <Text className='text-2xl font-bold text-gray-900'>{t('profile.menu.my_recipes')}</Text>
             </HStack>
             <Text className='text-sm text-gray-600'>{recipes.length} receitas</Text>
           </HStack>

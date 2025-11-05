@@ -1,9 +1,11 @@
 import { Ionicons } from '@expo/vector-icons'
 import { Tabs } from 'expo-router'
+import { useLocale } from '@/contexts'
 
 import { Box } from '@/components/ui/box'
 
 export default function TabNavigation() {
+  const { t } = useLocale()
   return (
     <Tabs
       screenOptions={{
@@ -31,7 +33,7 @@ export default function TabNavigation() {
       <Tabs.Screen
         name='home'
         options={{
-          title: 'Início',
+          title: t('tabs.home'),
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
               name={focused ? 'home' : 'home-outline'}
@@ -44,7 +46,7 @@ export default function TabNavigation() {
       <Tabs.Screen
         name='explore'
         options={{
-          title: 'Explorar',
+          title: t('tabs.explore'),
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
               name={focused ? 'compass' : 'compass-outline'}
@@ -77,7 +79,7 @@ export default function TabNavigation() {
       <Tabs.Screen
         name='favorites'
         options={{
-          title: 'Favoritos',
+          title: t('tabs.favorites'),
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
               name={focused ? 'heart' : 'heart-outline'}
@@ -90,7 +92,7 @@ export default function TabNavigation() {
       <Tabs.Screen
         name='profile'
         options={{
-          title: 'Perfil',
+          title: t('tabs.profile'),
           tabBarIcon: ({ color, size, focused }) => (
             <Ionicons
               name={focused ? 'person' : 'person-outline'}

@@ -4,6 +4,7 @@ import { TextInput, TouchableOpacity } from 'react-native'
 
 import { Box } from '@/components/ui/box'
 import { HStack } from '@/components/ui/hstack'
+import { useLocale } from '@/contexts'
 
 interface SearchBarProps {
   placeholder?: string
@@ -15,7 +16,7 @@ interface SearchBarProps {
 }
 
 export function SearchBar({
-  placeholder = 'Buscar receitas por nome, ingredientes...',
+  placeholder,
   value,
   onChangeText,
   onSearchPress,
@@ -23,6 +24,7 @@ export function SearchBar({
   debounceMs = 500,
 }: SearchBarProps) {
   const [localValue, setLocalValue] = useState(value || '')
+  const { t } = useLocale()
 
   // Atualizar valor local quando prop value mudar
   useEffect(() => {
@@ -50,7 +52,7 @@ export function SearchBar({
       <HStack className='bg-white rounded-xl px-4 py-3 items-center space-x-3 gap-1'>
         <TextInput
           className='flex-1 text-gray-700 text-base'
-          placeholder={placeholder}
+          placeholder={placeholder ?? t('search.general_placeholder')}
           placeholderTextColor='#9CA3AF'
           value={localValue}
           onChangeText={handleTextChange}

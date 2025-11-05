@@ -14,6 +14,7 @@ import { HStack } from '@/components/ui/hstack'
 import { Text } from '@/components/ui/text'
 import { VStack } from '@/components/ui/vstack'
 import type { Category, Recipe } from '@/types/api'
+import { useLocale } from '@/contexts'
 
 interface HomeViewProps {
   // Dados
@@ -51,12 +52,13 @@ export function HomeView({
   onAutoSearch,
   isFavorite,
 }: HomeViewProps) {
+  const { t } = useLocale()
   // Loading state
   if (isLoading) {
     return (
       <Box className='flex-1 bg-zinc-100 justify-center items-center'>
         <ActivityIndicator size='large' color='#8B5CF6' />
-        <Text className='mt-4 text-gray-600'>Carregando...</Text>
+        <Text className='mt-4 text-gray-600'>{t('common.loading')}</Text>
       </Box>
     )
   }
@@ -83,7 +85,7 @@ export function HomeView({
 
         {/* Search Bar */}
         <SearchBar
-          placeholder='Buscar receitas por nome, ingredientes...'
+          placeholder={t('search.general_placeholder')}
           value={searchQuery}
           onChangeText={onSearchChange || (() => {})}
           onSearchPress={onSearchPress}
@@ -94,9 +96,9 @@ export function HomeView({
         {/* Recent Recipes */}
         <VStack className='px-6 my-4'>
           <HStack className='justify-between items-center mb-4'>
-            <Text className='text-xl font-bold text-gray-900'>Receitas Recentes</Text>
+            <Text className='text-xl font-bold text-gray-900'>{t('home.recent_recipes')}</Text>
             <TouchableOpacity onPress={onViewAllRecipes}>
-              <Text className='text-purple-500 font-bold px-2'>Ver Todas</Text>
+              <Text className='text-purple-500 font-bold px-2'>{t('home.view_all')}</Text>
             </TouchableOpacity>
           </HStack>
 
@@ -105,10 +107,10 @@ export function HomeView({
               <Box className='items-center py-8'>
                 <Ionicons name='restaurant-outline' size={48} color='#9CA3AF' />
                 <Text className='mt-4 text-gray-500 text-center'>
-                  Nenhuma receita encontrada
+                  {t('home.no_results_title')}
                 </Text>
                 <Text className='text-sm text-gray-400 text-center mt-1'>
-                  Que tal adicionar uma nova receita?
+                  {t('home.no_results_subtitle')}
                 </Text>
               </Box>
             ) : (
@@ -129,7 +131,7 @@ export function HomeView({
                                 <Ionicons name='person' size={12} color='#3B82F6' />
                               </Box>
                               <Text className='text-xs text-gray-600 px-2'>
-                                by {recipe.author.name || 'Autor desconhecido'}
+                                {t('common.by')} {recipe.author.name || t('common.unknown_author')}
                               </Text>
                             </HStack>
                             <Text className='font-semibold text-gray-900'>

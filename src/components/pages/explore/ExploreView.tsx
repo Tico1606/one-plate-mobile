@@ -6,6 +6,7 @@ import { Box } from '@/components/ui/box'
 import { Text } from '@/components/ui/text'
 import type { Category, Recipe } from '@/types/api'
 import { RecipeList } from './RecipeList'
+import { useLocale } from '@/contexts'
 import type { SortDirection, SortOption } from './useExplorePage'
 
 interface ExploreViewProps {
@@ -93,12 +94,14 @@ const ExploreViewComponent = React.memo<ExploreViewProps>(
     //   [isRecipesLoading, onRetry],
     // )
 
+    const { t } = useLocale()
+
     // Só mostra loading inicial quando não há categorias carregadas
     if (isInitialLoading) {
       return (
         <Box className='flex-1 justify-center items-center'>
           <ActivityIndicator size='large' color='#8B5CF6' />
-          <Text className='mt-4 text-gray-600'>Carregando...</Text>
+          <Text className='mt-4 text-gray-600'>{t('common.loading')}</Text>
         </Box>
       )
     }
@@ -123,6 +126,7 @@ const ExploreViewComponent = React.memo<ExploreViewProps>(
 
             {/* Search Bar */}
             <SearchBar
+              placeholder={t('search.general_placeholder')}
               value={searchQuery}
               onChangeText={onSearchChange}
               onSearchPress={onSearchPress}
@@ -135,7 +139,7 @@ const ExploreViewComponent = React.memo<ExploreViewProps>(
               categories={browseCategories}
               selectedCategories={selectedCategories}
               onCategoryPress={onCategoryPress}
-              title='Filtrar por Categoria'
+              title={t('explore.filter_by_category')}
             />
 
             {/* Recipes List */}
@@ -157,7 +161,7 @@ const ExploreViewComponent = React.memo<ExploreViewProps>(
               onNextPage={onNextPage}
               onPrevPage={onPrevPage}
               isFavorite={isFavorite}
-              title='Receitas Publicadas'
+              title={t('explore.published_recipes')}
             />
           </ScrollView>
         </TouchableOpacity>

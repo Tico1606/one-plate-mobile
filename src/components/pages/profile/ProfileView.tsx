@@ -18,6 +18,7 @@ import { ModalBackdrop } from '@/components/ui/modal/index'
 import { Text } from '@/components/ui/text'
 import { VStack } from '@/components/ui/vstack'
 import { useImageUpload } from '@/hooks'
+import { useLocale } from '@/contexts'
 
 interface MenuItem {
   id: number
@@ -105,6 +106,7 @@ export const ProfileView = React.memo(function ProfileView({
     aspect: [1, 1], // Quadrado para foto de perfil
     quality: 0.8,
   })
+  const { t } = useLocale()
 
   const handlePhotoSelection = async () => {
     const uri = await showImagePicker()
@@ -129,7 +131,7 @@ export const ProfileView = React.memo(function ProfileView({
         {/* Profile Header */}
         <Box className='bg-white px-6 py-8 mx-4 rounded-lg'>
           <HStack className='justify-between items-center mb-6'>
-            <Text className='text-2xl font-bold text-gray-900'>Perfil</Text>
+            <Text className='text-2xl font-bold text-gray-900'>{t('profile.title')}</Text>
             <TouchableOpacity onPress={handleEditProfile} activeOpacity={0.9}>
               <Ionicons name='create' size={24} color='#374151' />
             </TouchableOpacity>
@@ -173,15 +175,15 @@ export const ProfileView = React.memo(function ProfileView({
                   <Text className='text-2xl font-bold text-gray-900'>
                     {backendProfile?.name ||
                       `${user?.firstName || ''} ${user?.lastName || ''}`.trim() ||
-                      'Usuário'}
+                      t('profile.user_fallback')}
                   </Text>
                   <Text className='text-gray-600 font-medium'>
                     {backendProfile?.email ||
                       user?.emailAddresses[0]?.emailAddress ||
-                      'Email não disponível'}
+                      t('profile.email_unavailable')}
                   </Text>
                   <Text className='text-sm text-gray-500 font-medium'>
-                    Membro desde{' '}
+                    {t('profile.member_since_prefix')}{' '}
                     {backendProfile?.createdAt
                       ? new Date(backendProfile.createdAt).getFullYear()
                       : '2024'}
@@ -192,14 +194,14 @@ export const ProfileView = React.memo(function ProfileView({
           </HStack>
 
           {/* Descrição */}
-          <Text className='text-lg font-medium text-gray-700'>Descrição</Text>
+          <Text className='text-lg font-medium text-gray-700'>{t('profile.description')}</Text>
           <VStack className='p-2 mt-2 space-y-2 border border-gray-200 rounded-lg'>
             {backendProfile?.description ? (
               <Text className='text-gray-600 text-md leading-5'>
                 {backendProfile.description}
               </Text>
             ) : (
-              <Text className='text-gray-600 text-md leading-5'>Nenhuma descrição</Text>
+              <Text className='text-gray-600 text-md leading-5'>{t('profile.no_description')}</Text>
             )}
           </VStack>
         </Box>
@@ -207,17 +209,17 @@ export const ProfileView = React.memo(function ProfileView({
         {/* Menu Items */}
         <VStack className='px-6 py-4 space-y-2 gap-4'>
           {menuItems.map((item) => (
-            <TouchableOpacity key={item.id} onPress={() => handleMenuItemPress(item)}>
+            <TouchableOpacity key={item.id} onPress={() => handleMenuItemPress(item)} activeOpacity={1.0}>
               <Card className='p-4'>
                 <HStack className='items-center space-x-4 gap-2'>
                   <Box
                     className='w-10 h-10 rounded-full items-center justify-center'
                     style={{ backgroundColor: `${item.color}20` }}
                   >
-                    <Ionicons name={item.icon as any} size={20} color={item.color} />
+                    <Ionicons name={item.icon as any} size={20} color={item.color}  />
                   </Box>
                   <Text className='flex-1 text-gray-900 font-medium'>{item.title}</Text>
-                  <Ionicons name='chevron-forward' size={20} color='#9CA3AF' />
+                  <Ionicons name='chevron-forward' size={20} color='#9CA3AF'  />
                 </HStack>
               </Card>
             </TouchableOpacity>
@@ -235,13 +237,13 @@ export const ProfileView = React.memo(function ProfileView({
             {isLoggingOut ? (
               <HStack className='items-center space-x-2'>
                 <ActivityIndicator size='small' color='#EF4444' />
-                <ButtonText className='text-red-500 font-medium'>Saindo...</ButtonText>
+                <ButtonText className='text-red-500 font-medium'>{t('profile.logging_out')}</ButtonText>
               </HStack>
             ) : (
               <HStack className='items-center space-x-2'>
                 <Ionicons name='log-out' size={20} color='#EF4444' />
                 <ButtonText className='text-red-500 font-medium'>
-                  Sair da Conta
+                  {t('profile.logout')}
                 </ButtonText>
               </HStack>
             )}
@@ -261,7 +263,7 @@ export const ProfileView = React.memo(function ProfileView({
           <View className='bg-white rounded-lg mx-4 w-[80%] max-w-md'>
             {/* Header */}
             <HStack className='justify-between items-center p-4 border-b border-gray-200'>
-              <Text className='text-lg font-semibold text-gray-900'>Editar Perfil</Text>
+              <Text className='text-lg font-semibold text-gray-900'>{t('profile.edit_title')}</Text>
               <TouchableOpacity onPress={handleCloseEditModal}>
                 <Ionicons name='close' size={24} color='#6B7280' />
               </TouchableOpacity>
@@ -271,14 +273,14 @@ export const ProfileView = React.memo(function ProfileView({
             <VStack className='p-4 mb-2 gap-4 space-y-4'>
               {/* Nome */}
               <VStack className='space-y-2 gap-2'>
-                <Text className='font-medium text-gray-700'>Nome</Text>
+                <Text className='font-medium text-gray-700'>{t('profile.name')}</Text>
                 <Input
                   className={`bg-gray-50 ${validationErrors.name ? 'border-red-300' : 'border-gray-200'}`}
                 >
                   <InputField
                     value={editFormData.name}
                     onChangeText={(value: string) => updateEditField('name', value)}
-                    placeholder='Digite seu nome'
+                    placeholder={t('profile.name_placeholder')}
                   />
                 </Input>
                 {validationErrors.name && (
@@ -288,14 +290,14 @@ export const ProfileView = React.memo(function ProfileView({
 
               {/* Descrição */}
               <VStack className='space-y-2 gap-2'>
-                <Text className='font-medium text-gray-700'>Descrição</Text>
+                <Text className='font-medium text-gray-700'>{t('profile.description')}</Text>
                 <Input className='bg-gray-50 border-gray-200'>
                   <InputField
                     value={editFormData.description}
                     onChangeText={(value: string) =>
                       updateEditField('description', value)
                     }
-                    placeholder='Conte um pouco sobre você...'
+                    placeholder={t('profile.about_placeholder')}
                     multiline
                     numberOfLines={3}
                   />
@@ -304,7 +306,7 @@ export const ProfileView = React.memo(function ProfileView({
 
               {/* Upload da Foto */}
               <VStack className='space-y-2 gap-2'>
-                <Text className='font-medium text-gray-700'>Foto de Perfil</Text>
+                <Text className='font-medium text-gray-700'>{t('profile.profile_photo')}</Text>
                 <HStack className='space-x-2 gap-2'>
                   <Button
                     onPress={handlePhotoSelection}
@@ -313,7 +315,7 @@ export const ProfileView = React.memo(function ProfileView({
                     className='flex-1 border-purple-300'
                   >
                     <ButtonText className='text-purple-600'>
-                      {isUploading ? 'Carregando...' : 'Selecionar Foto'}
+                      {isUploading ? t('common.loading') : t('profile.select_photo')}
                     </ButtonText>
                   </Button>
                   {editFormData.photoUrl && (
@@ -331,7 +333,7 @@ export const ProfileView = React.memo(function ProfileView({
               {/* Preview da Foto */}
               {editFormData.photoUrl && (
                 <VStack className='space-y-2'>
-                  <Text className='font-medium text-gray-700'>Preview</Text>
+                  <Text className='font-medium text-gray-700'>{t('profile.preview')}</Text>
                   <Box className='w-20 h-20 bg-purple-500 rounded-full items-center justify-center self-center'>
                     <Image
                       source={{ uri: editFormData.photoUrl }}
@@ -350,7 +352,7 @@ export const ProfileView = React.memo(function ProfileView({
                 onPress={handleCloseEditModal}
                 className='flex-1 border-gray-300'
               >
-                <ButtonText className='text-gray-700'>Cancelar</ButtonText>
+                <ButtonText className='text-gray-700'>{t('common.cancel')}</ButtonText>
               </Button>
               <Button
                 onPress={handleSaveProfile}
@@ -360,10 +362,10 @@ export const ProfileView = React.memo(function ProfileView({
                 {isUpdatingProfile ? (
                   <HStack className='items-center space-x-2'>
                     <ActivityIndicator size='small' color='white' />
-                    <ButtonText className='text-white'>Salvando...</ButtonText>
+                    <ButtonText className='text-white'>{t('common.saving')}</ButtonText>
                   </HStack>
                 ) : (
-                  <ButtonText className='text-white'>Salvar</ButtonText>
+                  <ButtonText className='text-white'>{t('common.save')}</ButtonText>
                 )}
               </Button>
             </HStack>
