@@ -17,8 +17,8 @@ import { Input, InputField } from '@/components/ui/input'
 import { ModalBackdrop } from '@/components/ui/modal/index'
 import { Text } from '@/components/ui/text'
 import { VStack } from '@/components/ui/vstack'
-import { useImageUpload } from '@/hooks'
 import { useLocale } from '@/contexts'
+import { useImageUpload } from '@/hooks'
 
 interface MenuItem {
   id: number
@@ -71,6 +71,7 @@ interface ProfileViewProps {
   handleEditProfile?: () => void
   handleCloseEditModal?: () => void
   handleShoppingListPress?: () => void
+  handleManageRecipesPress?: () => void
   updateEditField?: (field: string, value: string) => void
   handleSaveProfile?: () => void
 }
@@ -99,6 +100,7 @@ export const ProfileView = React.memo(function ProfileView({
   handleShoppingListPress = () => {
     // Navegação será feita pelo hook useProfilePage
   },
+  handleManageRecipesPress = () => {},
   updateEditField = () => {},
   handleSaveProfile = () => {},
 }: ProfileViewProps) {
@@ -194,32 +196,57 @@ export const ProfileView = React.memo(function ProfileView({
           </HStack>
 
           {/* Descrição */}
-          <Text className='text-lg font-medium text-gray-700'>{t('profile.description')}</Text>
+          <Text className='text-lg font-medium text-gray-700'>
+            {t('profile.description')}
+          </Text>
           <VStack className='p-2 mt-2 space-y-2 border border-gray-200 rounded-lg'>
             {backendProfile?.description ? (
               <Text className='text-gray-600 text-md leading-5'>
                 {backendProfile.description}
               </Text>
             ) : (
-              <Text className='text-gray-600 text-md leading-5'>{t('profile.no_description')}</Text>
+              <Text className='text-gray-600 text-md leading-5'>
+                {t('profile.no_description')}
+              </Text>
             )}
           </VStack>
         </Box>
 
+        {backendProfile?.role === 'ADMIN' && (
+          <Box className='px-6'>
+            <Button
+              onPress={handleManageRecipesPress}
+              className='bg-purple-600'
+              disabled={isLoading || isLoadingProfile}
+            >
+              <HStack className='items-center justify-center space-x-2'>
+                <Ionicons name='construct' size={18} color='#FFFFFF' />
+                <ButtonText className='text-white font-semibold'>
+                  {t('profile.menu.manage_recipes')}
+                </ButtonText>
+              </HStack>
+            </Button>
+          </Box>
+        )}
+
         {/* Menu Items */}
         <VStack className='px-6 py-4 space-y-2 gap-4'>
           {menuItems.map((item) => (
-            <TouchableOpacity key={item.id} onPress={() => handleMenuItemPress(item)} activeOpacity={1.0}>
+            <TouchableOpacity
+              key={item.id}
+              onPress={() => handleMenuItemPress(item)}
+              activeOpacity={1.0}
+            >
               <Card className='p-4'>
                 <HStack className='items-center space-x-4 gap-2'>
                   <Box
                     className='w-10 h-10 rounded-full items-center justify-center'
                     style={{ backgroundColor: `${item.color}20` }}
                   >
-                    <Ionicons name={item.icon as any} size={20} color={item.color}  />
+                    <Ionicons name={item.icon as any} size={20} color={item.color} />
                   </Box>
                   <Text className='flex-1 text-gray-900 font-medium'>{item.title}</Text>
-                  <Ionicons name='chevron-forward' size={20} color='#9CA3AF'  />
+                  <Ionicons name='chevron-forward' size={20} color='#9CA3AF' />
                 </HStack>
               </Card>
             </TouchableOpacity>
@@ -237,7 +264,9 @@ export const ProfileView = React.memo(function ProfileView({
             {isLoggingOut ? (
               <HStack className='items-center space-x-2'>
                 <ActivityIndicator size='small' color='#EF4444' />
-                <ButtonText className='text-red-500 font-medium'>{t('profile.logging_out')}</ButtonText>
+                <ButtonText className='text-red-500 font-medium'>
+                  {t('profile.logging_out')}
+                </ButtonText>
               </HStack>
             ) : (
               <HStack className='items-center space-x-2'>
@@ -263,7 +292,9 @@ export const ProfileView = React.memo(function ProfileView({
           <View className='bg-white rounded-lg mx-4 w-[80%] max-w-md'>
             {/* Header */}
             <HStack className='justify-between items-center p-4 border-b border-gray-200'>
-              <Text className='text-lg font-semibold text-gray-900'>{t('profile.edit_title')}</Text>
+              <Text className='text-lg font-semibold text-gray-900'>
+                {t('profile.edit_title')}
+              </Text>
               <TouchableOpacity onPress={handleCloseEditModal}>
                 <Ionicons name='close' size={24} color='#6B7280' />
               </TouchableOpacity>
@@ -290,7 +321,9 @@ export const ProfileView = React.memo(function ProfileView({
 
               {/* Descrição */}
               <VStack className='space-y-2 gap-2'>
-                <Text className='font-medium text-gray-700'>{t('profile.description')}</Text>
+                <Text className='font-medium text-gray-700'>
+                  {t('profile.description')}
+                </Text>
                 <Input className='bg-gray-50 border-gray-200'>
                   <InputField
                     value={editFormData.description}
@@ -306,7 +339,9 @@ export const ProfileView = React.memo(function ProfileView({
 
               {/* Upload da Foto */}
               <VStack className='space-y-2 gap-2'>
-                <Text className='font-medium text-gray-700'>{t('profile.profile_photo')}</Text>
+                <Text className='font-medium text-gray-700'>
+                  {t('profile.profile_photo')}
+                </Text>
                 <HStack className='space-x-2 gap-2'>
                   <Button
                     onPress={handlePhotoSelection}
@@ -333,7 +368,9 @@ export const ProfileView = React.memo(function ProfileView({
               {/* Preview da Foto */}
               {editFormData.photoUrl && (
                 <VStack className='space-y-2'>
-                  <Text className='font-medium text-gray-700'>{t('profile.preview')}</Text>
+                  <Text className='font-medium text-gray-700'>
+                    {t('profile.preview')}
+                  </Text>
                   <Box className='w-20 h-20 bg-purple-500 rounded-full items-center justify-center self-center'>
                     <Image
                       source={{ uri: editFormData.photoUrl }}

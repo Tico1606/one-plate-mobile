@@ -30,7 +30,14 @@ interface EditRecipeFormData {
 
 export function useEditRecipe() {
   const router = useRouter()
-  const { id } = useLocalSearchParams<{ id: string }>()
+  const { id, returnTo } = useLocalSearchParams<{ id: string; returnTo?: 'manage' | 'my' }>()
+  const getReturnRoute = useCallback(
+    (withUpdated?: boolean) => {
+      const suffix = withUpdated ? '?updated=true' : ''
+      return returnTo === 'manage' ? `/(auth)/manage-recipes${suffix}` : `/(auth)/my-recipes${suffix}`
+    },
+    [returnTo],
+  )
   const [formData, setFormData] = useState<EditRecipeFormData>({
     title: '',
     description: '',
@@ -168,14 +175,14 @@ export function useEditRecipe() {
 
       await recipesService.update(id, recipeData)
       console.log('🔄 EditRecipe - Navegando de volta com parâmetro updated=true')
-      router.replace('/(auth)/my-recipes?updated=true')
+      router.replace(getReturnRoute(true))
     } catch (err) {
       console.error('Erro ao atualizar receita:', err)
       showErrorToast('Erro ao atualizar receita. Tente novamente.')
     } finally {
       setIsSaving(false)
     }
-  }, [formData, validateForm, router, showErrorToast, id, isSaving])
+  }, [formData, validateForm, router, showErrorToast, id, isSaving, getReturnRoute])
 
   // Limpar formulário
   const clearForm = useCallback(() => {
@@ -316,8 +323,8 @@ export function useEditRecipe() {
 
   // Voltar para a página anterior
   const goBack = useCallback(() => {
-    router.replace('/(auth)/my-recipes')
-  }, [router])
+    router.replace(getReturnRoute())
+  }, [router, getReturnRoute])
 
   useEffect(() => {
     loadRecipe()

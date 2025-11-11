@@ -22,6 +22,13 @@ interface MyRecipesViewProps {
   loading: boolean
   error: string | null
   searchQuery: string
+  title?: string
+  searchPlaceholder?: string
+  emptyStateNoResultsTitle?: string
+  emptyStateNoResultsSubtitle?: string
+  emptyStateNoDataTitle?: string
+  emptyStateNoDataSubtitle?: string
+  showAuthorName?: boolean
 
   // Handlers
   publishRecipe: (recipe: Recipe) => void
@@ -43,8 +50,23 @@ export function MyRecipesView({
   goBack,
   refreshRecipes,
   setSearchQuery,
+  title,
+  searchPlaceholder,
+  emptyStateNoResultsTitle,
+  emptyStateNoResultsSubtitle,
+  emptyStateNoDataTitle,
+  emptyStateNoDataSubtitle,
+  showAuthorName = false,
 }: MyRecipesViewProps) {
   const { t } = useLocale()
+  const headerTitle = title ?? t('profile.menu.my_recipes')
+  const searchPlaceholderText = searchPlaceholder ?? t('my_recipes.search_placeholder')
+  const noResultsTitle = emptyStateNoResultsTitle ?? t('my_recipes.empty_no_results_title')
+  const noResultsSubtitle =
+    emptyStateNoResultsSubtitle ?? t('my_recipes.empty_no_results_subtitle')
+  const noDataTitle = emptyStateNoDataTitle ?? t('my_recipes.empty_no_data_title')
+  const noDataSubtitle = emptyStateNoDataSubtitle ?? t('my_recipes.empty_no_data_subtitle')
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'PUBLISHED':
@@ -99,7 +121,7 @@ export function MyRecipesView({
               <TouchableOpacity onPress={goBack}>
                 <Ionicons name='arrow-back' size={24} color='#374151' />
               </TouchableOpacity>
-              <Text className='text-2xl font-bold text-gray-900'>{t('profile.menu.my_recipes')}</Text>
+              <Text className='text-2xl font-bold text-gray-900'>{headerTitle}</Text>
             </HStack>
             <Text className='text-sm text-gray-600'>{recipes.length} receitas</Text>
           </HStack>
@@ -109,7 +131,7 @@ export function MyRecipesView({
             <SearchBar
               value={searchQuery}
               onChangeText={setSearchQuery}
-              placeholder='Buscar por nome ou ingrediente...'
+              placeholder={searchPlaceholderText}
               onSearchPress={() => {}}
             />
           </Box>
@@ -134,13 +156,13 @@ export function MyRecipesView({
                 <Ionicons name='restaurant-outline' size={64} color='#9CA3AF' />
                 <Text className='mt-4 text-gray-500 text-center text-lg'>
                   {searchQuery.trim()
-                    ? 'Nenhuma receita encontrada'
-                    : 'Nenhuma receita criada'}
+                    ? noResultsTitle
+                    : noDataTitle}
                 </Text>
                 <Text className='text-sm text-gray-400 text-center mt-2'>
                   {searchQuery.trim()
-                    ? 'Tente buscar por outro termo'
-                    : 'Que tal criar sua primeira receita?'}
+                    ? noResultsSubtitle
+                    : noDataSubtitle}
                 </Text>
               </Box>
             ) : (
@@ -165,6 +187,11 @@ export function MyRecipesView({
                           >
                             {recipe.title}
                           </Text>
+                          {showAuthorName && (
+                            <Text className='text-sm text-gray-500' numberOfLines={1}>
+                              {recipe.author?.name || t('common.unknown_author')}
+                            </Text>
+                          )}
                           <HStack className='items-center space-x-2 gap-2'>
                             <Box
                               className='px-2 py-1 rounded-full'

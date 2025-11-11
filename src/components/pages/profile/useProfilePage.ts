@@ -240,6 +240,10 @@ export function useProfilePage() {
     router.push('/shopping-list')
   }, [router])
 
+  const handleManageRecipesPress = useCallback(() => {
+    router.push('/(auth)/manage-recipes')
+  }, [router])
+
   const handleCloseShoppingList = useCallback(() => {
     // Não é mais necessário pois não é mais um modal
   }, [])
@@ -266,6 +270,7 @@ export function useProfilePage() {
     handleCloseEditModal,
     handleShoppingListPress,
     handleCloseShoppingList,
+    handleManageRecipesPress,
     updateEditField,
     handleSaveProfile,
   }
